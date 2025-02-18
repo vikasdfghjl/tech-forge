@@ -7,6 +7,7 @@ interface Tool {
     name: string;
     wantCount: number;
     fundCount: number;
+    createdAt: string; // Add this line
 }
 
 const ToolForm = () => {
@@ -14,6 +15,7 @@ const ToolForm = () => {
     const [toolName, setToolName] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [loadingStates, setLoadingStates] = useState<{[key: string]: {want: boolean, fund: boolean}}>({});
+    const [sortOption, setSortOption] = useState('latest');
 
     const fetchTools = async () => {
         const response = await axios.get('http://localhost:5000/api/tools');
@@ -84,6 +86,21 @@ const ToolForm = () => {
         }
     };
 
+    const sortTools = (tools: Tool[]) => {
+        switch (sortOption) {
+            case 'latest':
+                return tools.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            case 'ascending':
+                return tools.sort((a, b) => (a.wantCount + a.fundCount) - (b.wantCount + b.fundCount));
+            case 'descending':
+                return tools.sort((a, b) => (b.wantCount + b.fundCount) - (a.wantCount + a.fundCount));
+            default:
+                return tools;
+        }
+    };
+
+    const sortedTools = sortTools(tools);
+
     return (
         <div className="tool-form-container">
             <form onSubmit={handleSubmit} className="tool-form">
@@ -102,13 +119,28 @@ const ToolForm = () => {
                 </div>
             </form>
 
+            <div className="sort-options">
+                <label>
+                    Sort by:
+                    <select 
+                        value={sortOption} 
+                        onChange={(e) => setSortOption(e.target.value)}
+                    >
+                        <option value="latest">Latest</option>
+                        <option value="ascending">Ascending</option>
+                        <option value="descending">Descending</option>
+                    </select>
+                </label>
+            </div>
+
             <h2 className="tools-heading">Available Tools</h2>
             <div className="tools-list">
-                {tools.length === 0 ? (
+                {sortedTools.length === 0 ? (
                     <p className="no-tools">No tools added yet.</p>
                 ) : (
-                    tools.map((tool) => (
+                    sortedTools.map((tool, index) => (
                         <div key={tool._id} className="tool-item">
+                            <span className="tool-index">{index + 1}. </span> {/* Add index number */}
                             <span className="tool-name">{tool.name}</span>
                             <div className="tool-actions">
                                 <button
