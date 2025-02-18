@@ -1,0 +1,53 @@
+.projects-page {
+    padding: 20px;
+    background-color: #f9f9f9;
+}
+
+.add-project-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.add-project-form input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.add-project-form button {
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.add-project-form button:hover {
+    background-color: #0056b3;
+}
+
+.sort-options {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+}
+
+.sort-options label {
+    display: flex;
+    align-items: center;
+}
+
+.sort-options select {
+    margin-left: 10px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.projects-grid {
+    display: grid;
+    gap: 20px;
+}

@@ -1,0 +1,88 @@
+.project-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.want-button, .fund-button {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+}
+
+.want-button {
+    background-color: #e0e7ff;
+    color: #4338ca;
+    border: 1px solid #4338ca;
+}
+
+.want-button:hover {
+    background-color: #c7d2fe;
+}
+
+.fund-button {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #15803d;
+}
+
+.fund-button:hover {
+    background-color: #bbf7d0;
+}
+
+.want-button:disabled, .fund-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.loading {
+    position: relative;
+    opacity: 0.8;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    border: 3px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: button-loading-spinner 1s ease infinite;
+}
+
+@keyframes button-loading-spinner {
+    from {
+        transform: rotate(0turn);
+    }
+    to {
+        transform: rotate(1turn);
+    }
+}
+
+.project-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.project-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.project-description {
+    color: #4b5563;
+    margin-bottom: 1rem;
+}
