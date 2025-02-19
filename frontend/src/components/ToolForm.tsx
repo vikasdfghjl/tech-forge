@@ -7,7 +7,14 @@ interface Tool {
     name: string;
     wantCount: number;
     fundCount: number;
-    createdAt: string; // Add this line
+    createdAt: string;
+    comments: Comment[]; // Add comments property
+}
+
+interface Comment {
+    _id: string;
+    text: string;
+    likes: number;
 }
 
 const ToolForm = () => {
@@ -16,6 +23,7 @@ const ToolForm = () => {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [loadingStates, setLoadingStates] = useState<{[key: string]: {want: boolean, fund: boolean}}>({});
     const [sortOption, setSortOption] = useState('latest');
+    const [newComment, setNewComment] = useState<{[key: string]: string}>({});
 
     const fetchTools = async () => {
         const response = await axios.get('http://localhost:5000/api/tools');
@@ -54,7 +62,8 @@ const ToolForm = () => {
                 ...prev,
                 [toolId]: { ...prev[toolId], want: true }
             }));
-            await axios.post(`http://localhost:5000/api/tools/${toolId}/want`);
+            const response = await axios.post(`http://localhost:5000/api/tools/${toolId}/increment-want`);
+            console.log('Want count incremented:', response.data);
             await fetchTools();
         } catch (error) {
             console.error('Want error:', error);
@@ -73,7 +82,8 @@ const ToolForm = () => {
                 ...prev,
                 [toolId]: { ...prev[toolId], fund: true }
             }));
-            await axios.post(`http://localhost:5000/api/tools/${toolId}/fund`);
+            const response = await axios.post(`http://localhost:5000/api/tools/${toolId}/increment-fund`); // Ensure this URL is correct
+            console.log('Fund count incremented:', response.data);
             await fetchTools();
         } catch (error) {
             console.error('Fund error:', error);
@@ -83,6 +93,27 @@ const ToolForm = () => {
                 ...prev,
                 [toolId]: { ...prev[toolId], fund: false }
             }));
+        }
+    };
+
+    const handleAddComment = async (toolId: string) => {
+        try {
+            await axios.post(`http://localhost:5000/api/tools/${toolId}/comments`, { text: newComment[toolId] });
+            setNewComment(prev => ({ ...prev, [toolId]: '' }));
+            await fetchTools();
+        } catch (error) {
+            console.error('Add comment error:', error);
+            alert('Failed to add comment');
+        }
+    };
+
+    const handleLikeComment = async (toolId: string, commentId: string) => {
+        try {
+            await axios.post(`http://localhost:5000/api/tools/${toolId}/comments/${commentId}/like`);
+            await fetchTools();
+        } catch (error) {
+            console.error('Like comment error:', error);
+            alert('Failed to like comment');
         }
     };
 
@@ -169,6 +200,34 @@ const ToolForm = () => {
                                 >
                                     Delete
                                 </button>
+                            </div>
+                            <div className="comments-section">
+                                <h3>Comments</h3>
+                                {tool.comments?.map(comment => ( // Ensure tool.comments is defined
+                                    <div key={comment._id} className="comment-item">
+                                        <span>{comment.text}</span>
+                                        <button 
+                                            onClick={() => handleLikeComment(tool._id, comment._id)}
+                                            className="like-button"
+                                        >
+                                            👍 {comment.likes}
+                                        </button>
+                                    </div>
+                                ))}
+                                <div className="add-comment">
+                                    <input
+                                        type="text"
+                                        value={newComment[tool._id] || ''}
+                                        onChange={(e) => setNewComment(prev => ({ ...prev, [tool._id]: e.target.value }))}
+                                        placeholder="Add a comment"
+                                    />
+                                    <button 
+                                        onClick={() => handleAddComment(tool._id)}
+                                        className="add-comment-button"
+                                    >
+                                        Add Comment
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))

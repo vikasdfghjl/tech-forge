@@ -3,54 +3,16 @@ import { toolController } from '../controllers/toolController';
 
 const router = Router();
 
-// Define routes with proper error handling
-router.get('/tools', async (req, res, next) => {
-    try {
-        await toolController.getAll(req, res);
-    } catch (error) {
-        next(error);
-    }
-});
-
-router.post('/tools', async (req, res, next) => {
-    try {
-        await toolController.create(req, res);
-    } catch (error) {
-        next(error);
-    }
-});
-
-router.put('/tools/:id', async (req, res, next) => {
-    try {
-        await toolController.update(req, res);
-    } catch (error) {
-        next(error);
-    }
-});
-
-router.delete('/tools/:id', async (req, res, next) => {
-    try {
-        await toolController.delete(req, res);
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Add new routes for want and fund buttons
-router.post('/tools/:toolId/want', async (req, res, next) => {
-    try {
-        await toolController.incrementWant(req, res);
-    } catch (error) {
-        next(error);
-    }
-});
-
-router.post('/tools/:toolId/fund', async (req, res, next) => {
-    try {
-        await toolController.incrementFund(req, res);
-    } catch (error) {
-        next(error);
-    }
-});
+router.get('/tools', toolController.getAll);
+router.post('/tools', toolController.create);
+router.put('/tools/:id', toolController.update);
+router.delete('/tools/:id', toolController.delete);
+router.post('/projects/:projectId/tools', toolController.addToolToProject);
+router.get('/projects/:projectId/tools', toolController.getProjectTools);
+router.delete('/projects/:projectId/tools/:toolName', toolController.removeToolFromProject);
+router.post('/tools/:toolId/increment-want', toolController.incrementWant);
+router.post('/tools/:toolId/increment-fund', toolController.incrementFund); // Ensure this line exists
+router.post('/tools/:toolId/comments', toolController.addComment);
+router.post('/tools/:toolId/comments/:commentId/like', toolController.likeComment);
 
 export default router;

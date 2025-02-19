@@ -5,6 +5,7 @@ import { setRoutes } from './routes/index';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import debug from 'debug';
+import toolRoutes from './routes/toolRoutes'; // Ensure this import exists
 
 const logger = debug('tech-forge:app');
 
@@ -23,6 +24,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 
 setRoutes(app);
+
+app.use('/api', toolRoutes); // Ensure this line exists to use the tool routes
 
 // Add error handling
 app.use(errorHandler);

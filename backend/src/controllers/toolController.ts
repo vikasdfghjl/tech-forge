@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Tool from '../models/Tool';
 import Project from '../models/Project';
 import debug from 'debug';
+import Comment from '../models/Comment'; // Add this import
 
 const logger = debug('tech-forge:controller:tool');
 
@@ -189,6 +190,44 @@ export const toolController = {
         } catch (error) {
             logger('Error incrementing fund count: %O', error);
             res.status(400).json({ error: 'Failed to increment fund count' });
+        }
+    },
+
+    addComment: async (req: Request, res: Response) => {
+        try {
+            const { toolId } = req.params;
+            const { text } = req.body;
+            const tool = await Tool.findById(toolId);
+            if (!tool) {
+                return res.status(404).json({ error: 'Tool not found' });
+            }
+            const comment = new Comment({ text }); // Create a new instance of Comment
+            tool.comments.push(comment);
+            await tool.save();
+            res.status(200).json(tool);
+        } catch (error) {
+            logger('Error adding comment: %O', error);
+            res.status(400).json({ error: 'Failed to add comment' });
+        }
+    },
+
+    likeComment: async (req: Request, res: Response) => {
+        try {
+            const { toolId, commentId } = req.params;
+            const tool = await Tool.findById(toolId);
+            if (!tool) {
+                return res.status(404).json({ error: 'Tool not found' });
+            }
+            const comment = tool.comments.find((comment: { _id: any }) => comment._id.toString() === commentId);
+            if (!comment) {
+                return res.status(404).json({ error: 'Comment not found' });
+            }
+            comment.likes += 1;
+            await tool.save();
+            res.status(200).json(tool);
+        } catch (error) {
+            logger('Error liking comment: %O', error);
+            res.status(400).json({ error: 'Failed to like comment' });
         }
     }
 };
