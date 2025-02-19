@@ -17,7 +17,11 @@ interface Comment {
     likes: number;
 }
 
-const ToolForm = () => {
+interface ToolFormProps {
+    user: any; // Replace 'any' with the appropriate type if known
+}
+
+const ToolForm: React.FC<ToolFormProps> = ({ user }) => {
     const [tools, setTools] = useState<Tool[]>([]);
     const [toolName, setToolName] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -57,6 +61,10 @@ const ToolForm = () => {
     };
 
     const handleWantClick = async (toolId: string) => {
+        if (!user) {
+            alert('Please log in to perform this action.');
+            return;
+        }
         try {
             setLoadingStates(prev => ({
                 ...prev,
@@ -77,6 +85,10 @@ const ToolForm = () => {
     };
 
     const handleFundClick = async (toolId: string) => {
+        if (!user) {
+            alert('Please log in to perform this action.');
+            return;
+        }
         try {
             setLoadingStates(prev => ({
                 ...prev,
@@ -97,6 +109,10 @@ const ToolForm = () => {
     };
 
     const handleAddComment = async (toolId: string) => {
+        if (!user) {
+            alert('Please log in to perform this action.');
+            return;
+        }
         try {
             await axios.post(`http://localhost:5000/api/tools/${toolId}/comments`, { text: newComment[toolId] });
             setNewComment(prev => ({ ...prev, [toolId]: '' }));
@@ -108,6 +124,10 @@ const ToolForm = () => {
     };
 
     const handleLikeComment = async (toolId: string, commentId: string) => {
+        if (!user) {
+            alert('Please log in to perform this action.');
+            return;
+        }
         try {
             await axios.post(`http://localhost:5000/api/tools/${toolId}/comments/${commentId}/like`);
             await fetchTools();
