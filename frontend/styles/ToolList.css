@@ -1,0 +1,64 @@
+.tool-list-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.tool-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.tool-item {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tool-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.tool-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+
+.tool-category {
+  background-color: #f0f0f0;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.tool-votes {
+  font-weight: bold;
+}
+
+.loading, .error {
+  text-align: center;
+  padding: 20px;
+  font-size: 1.2rem;
+}
+
+.error {
+  color: #e74c3c;
+}
+
+/* Dark mode compatibility */
+.dark-mode .tool-item {
+  background-color: #333;
+  border-color: #555;
+  color: #fff;
+}
+
+.dark-mode .tool-category {
+  background-color: #444;
+  color: #eee;
+}
