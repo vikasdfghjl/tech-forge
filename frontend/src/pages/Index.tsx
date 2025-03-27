@@ -2,7 +2,8 @@ import Header from "@/components/Header";
 import Navbar from "@/components/Navbar";
 import ToolList from "@/components/ToolList";
 import SideColumn from "@/components/SideColumn";
-import { useToolData } from "@/hooks/useToolData";
+// Try direct import instead of alias
+import { useToolData } from "../hooks/useToolData";
 
 interface IndexProps {
   isDarkMode: boolean;
@@ -10,7 +11,6 @@ interface IndexProps {
 }
 
 const Index = ({ isDarkMode, toggleTheme }: IndexProps) => {
-  // Get tools data and functions from the useToolData hook
   const { tools, upvoteTool, wantTool, addComment, addTool, deleteTool } = useToolData();
 
   return (
@@ -27,8 +27,13 @@ const Index = ({ isDarkMode, toggleTheme }: IndexProps) => {
             onUpvote={upvoteTool} 
             onWant={wantTool} 
             onAddComment={addComment}
-            onAddTool={addTool}
-            onDelete={deleteTool} // Pass deleteTool to ToolList
+            onAddTool={(name, description) => addTool({ 
+              name, 
+              description, 
+              timestamp: Date.now(), 
+              creator: 'Anonymous' 
+            })}
+            onDelete={deleteTool}
           />
         </div>
         <div className="lg:col-span-3 order-2 lg:order-3">

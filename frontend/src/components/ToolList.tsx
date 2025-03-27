@@ -1,22 +1,30 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import ToolCard from "./ToolCard";
-import { Tool } from "../hooks/useToolData";
+import { Tool as BaseTool } from "../hooks/useToolData";
 
-type ToolListProps = {
-  onUpvote: (id: string) => void;
-  onWant: (id: string) => void;
-  onAddComment: (toolId: string, text: string) => void;
-  onAddTool: (name: string, description: string) => void;
-};
+// Extend the Tool interface to include MongoDB fields
+interface Tool extends BaseTool {
+  _id?: string;
+}
 
-const ToolList = ({ onUpvote, onWant, onAddComment, onAddTool }: ToolListProps) => {
-  const [tools, setTools] = useState<Tool[]>([]);
+// Update the ToolListProps interface to include the tools property
+interface ToolListProps {
+  tools: Tool[];
+  onUpvote: (id: string) => Promise<void>;
+  onWant: (id: string) => Promise<void>;
+  onAddComment: (toolId: string, commentText: string) => Promise<void>;
+  onAddTool: (name: string, description: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}
+
+const ToolList = ({ tools: initialTools, onUpvote, onWant, onAddComment, onAddTool, onDelete }: ToolListProps) => {
+  const [tools, setTools] = useState<Tool[]>(initialTools);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filter, setFilter] = useState<string>(""); 
-  const [filterType, setFilterType] = useState<string>("all"); // Add filter type (name, description, all)
+  const [filterType, setFilterType] = useState<string>("all");
   const [sort, setSort] = useState<string>(""); 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -149,14 +157,18 @@ const ToolList = ({ onUpvote, onWant, onAddComment, onAddTool }: ToolListProps) 
     return 0;
   });
 
-  console.log("Original tools array:", tools);
-  console.log("Filtered tools:", filteredTools);
-  console.log("Sorted tools:", sortedTools);
-
-  // Map MongoDB _id to id for frontend compatibility
+  // Map MongoDB _id to id for frontend compatibility and convert comments to match LocalTool type
   const toolsWithId = sortedTools.map(tool => ({
     ...tool,
-    id: tool.id || tool._id // Use existing id or fallback to _id
+    id: tool.id || tool._id || '', // Use existing id or fallback to _id
+    comments: Array.isArray(tool.comments) 
+      ? tool.comments.map(comment => {
+          if (typeof comment === 'string') {
+            return { id: Date.now().toString(), text: comment, timestamp: Date.now() };
+          }
+          return comment;
+        })
+      : []
   }));
   
   // Ensure all tools have an id property

@@ -4,7 +4,7 @@ import { Tool } from "../hooks/useToolData";
 import ToolComments from "./ToolComments";
 
 type ToolCardProps = {
-  tool: Tool;
+  tool: Tool & { id?: string; _id?: string };
   onUpvote: (id: string) => void;
   onWant: (id: string) => void;
   onAddComment: (toolId: string, text: string) => void;
