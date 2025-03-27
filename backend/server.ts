@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import chartRoutes from "./routes/ChartRoutes";
 import toolIdeasRouter from "./routes/toolIdeas";
 import toolRoutes from "./routes/toolRoutes";
+import authRoutes from './routes/authRoutes';
 
 dotenv.config();
 
@@ -29,10 +30,11 @@ app.use((req, res, next) => {
 app.use("/api/charts", chartRoutes);
 app.use("/api/tool-ideas", toolIdeasRouter);
 app.use("/api/tools", toolRoutes);
+app.use('/api/auth', authRoutes);
 
 // MongoDB Connection
 mongoose
-  .connect(process.env.MONGODB_URI || "mongodb://localhost:27017/tooltopia")
+  .connect(process.env.MONGO_URI || "mongodb://localhost:27017/tooltopia")
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("Could not connect to MongoDB:", err));
 

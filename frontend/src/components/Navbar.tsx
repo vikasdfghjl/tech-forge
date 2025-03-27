@@ -1,7 +1,6 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { User, Moon, Sun } from "lucide-react";
+import { User, Moon, Sun, LogOut } from "lucide-react";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +9,9 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { toast } from "sonner";
 
 interface NavbarProps {
   isDarkMode: boolean;
@@ -17,26 +19,42 @@ interface NavbarProps {
 }
 
 const Navbar = ({ isDarkMode, toggleTheme }: NavbarProps) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
+  const { isAuthenticated, logout, user } = useAuth();
 
-  // Simulated login/logout functions
+  // Navigation handlers
   const handleLogin = () => {
-    setIsLoggedIn(true);
+    navigate("/login");
   };
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
+    logout();
+    toast.success("Logged out successfully");
+    // If we're on a protected route, navigate to home
+    if (window.location.pathname === "/profile") {
+      navigate("/");
+    }
   };
 
   const handleSignup = () => {
-    // In real app, this would open signup form
-    console.log("Sign up clicked");
+    navigate("/signup");
+  };
+
+  const handleProfile = () => {
+    navigate("/profile");
   };
 
   return (
     <nav className="w-full py-4 px-6 flex items-center justify-between border-b border-border/30 backdrop-blur-sm bg-background/90 sticky top-0 z-40">
-      <div className="flex-1">
-        {/* Left side - could add logo here */}
+      <div className="flex-1 flex items-center">
+        {/* Logo/Home link */}
+        <Button 
+          variant="ghost" 
+          onClick={() => navigate("/")} 
+          className="text-lg font-semibold subtle-text-gradient"
+        >
+          Tech Forge
+        </Button>
       </div>
       
       <div className="flex items-center gap-4">
@@ -59,12 +77,18 @@ const Navbar = ({ isDarkMode, toggleTheme }: NavbarProps) => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            {isLoggedIn ? (
+            {isAuthenticated ? (
               <>
-                <DropdownMenuItem className="cursor-pointer">Profile</DropdownMenuItem>
+                <div className="px-2 py-1.5 text-sm font-medium">
+                  Signed in as<br />
+                  <span className="text-muted-foreground">{user?.name || "User"}</span>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="cursor-pointer" onClick={handleProfile}>Profile</DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer">Settings</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
                   Log out
                 </DropdownMenuItem>
               </>

@@ -179,26 +179,26 @@ const ToolList = ({ tools: initialTools, onUpvote, onWant, onAddComment, onAddTo
   console.log("Safe tools for rendering:", safeTools);
 
   return (
-    <div className="space-y-4 w-full">
-      <form onSubmit={handleSubmit} className="mb-4 p-4 border rounded-lg bg-background space-y-2">
+    <div className="space-y-6 w-full">
+      <form onSubmit={handleSubmit} className="mb-6 p-6 border rounded-lg bg-background/50 shadow-sm space-y-4">
         <input
           type="text"
           placeholder="Tool Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full px-3 py-2 border rounded-lg"
+          className="w-full px-4 py-2.5 border rounded-lg focus:border-primary/50 outline-none transition-all"
           required
         />
         <textarea
           placeholder="Tool Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full px-3 py-2 border rounded-lg"
+          className="w-full px-4 py-2.5 border rounded-lg focus:border-primary/50 outline-none transition-all min-h-[100px] resize-y"
           required
         />
         <button
           type="submit"
-          className="px-4 py-2 bg-primary text-white rounded-lg"
+          className="button-primary w-full sm:w-auto"
           disabled={isSubmitting}
         >
           {isSubmitting ? "Submitting..." : "Submit Tool Idea"}
@@ -206,19 +206,19 @@ const ToolList = ({ tools: initialTools, onUpvote, onWant, onAddComment, onAddTo
       </form>
 
       {/* Enhanced Filter and Sort Controls */}
-      <div className="flex flex-col md:flex-row gap-2 mb-4">
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="flex flex-1 gap-2">
           <input
             type="text"
             placeholder="Search tools..."
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="px-3 py-2 border rounded-lg flex-1"
+            className="px-4 py-2 border rounded-lg flex-1 focus:border-primary/50 outline-none transition-all"
           />
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="px-3 py-2 border rounded-lg"
+            className="px-3 py-2 border rounded-lg focus:border-primary/50 outline-none transition-all"
           >
             <option value="all">All Fields</option>
             <option value="name">Name Only</option>
@@ -228,7 +228,7 @@ const ToolList = ({ tools: initialTools, onUpvote, onWant, onAddComment, onAddTo
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value)}
-          className="px-3 py-2 border rounded-lg"
+          className="px-3 py-2 border rounded-lg focus:border-primary/50 outline-none transition-all"
         >
           <option value="">Sort By</option>
           <option value="upvotes">Most Upvotes</option>
