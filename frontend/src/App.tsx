@@ -13,8 +13,6 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProfilePage from "./pages/ProfilePage";
-import { useToolData } from "./hooks/useToolData";
-import "./index.css";
 
 const queryClient = new QueryClient();
 
@@ -24,15 +22,6 @@ const App = () => {
     return savedTheme === "dark" || 
       (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches);
   });
-
-  const { 
-    tools, 
-    upvoteTool, 
-    wantTool, 
-    addComment,
-    addTool,
-    deleteTool
-  } = useToolData();
 
   useEffect(() => {
     if (isDarkMode) {
@@ -50,8 +39,8 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <TooltipProvider>
           <Toaster />
           <Sonner position="top-center" closeButton />
           <Router>
@@ -59,19 +48,7 @@ const App = () => {
               <Navbar isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
               <main className="container mx-auto py-8">
                 <Routes>
-                  <Route 
-                    path="/" 
-                    element={
-                      <HomePage 
-                        tools={tools} 
-                        onUpvote={upvoteTool} 
-                        onWant={wantTool} 
-                        onAddComment={addComment} 
-                        onAddTool={(name, description) => addTool({ name, description, creator: "Anonymous", timestamp: Date.now() })}
-                        onDelete={deleteTool}
-                      />
-                    } 
-                  />
+                  <Route path="/" element={<Index isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
                   <Route 
@@ -87,8 +64,8 @@ const App = () => {
               </main>
             </div>
           </Router>
-        </AuthProvider>
-      </TooltipProvider>
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 };

@@ -1,6 +1,6 @@
 import express from 'express';
 import { register, login, getUserProfile } from '../controllers/authController';
-import { protect } from '../middleware/authMiddleware';
+import { protect } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -8,7 +8,13 @@ const router = express.Router();
 router.post('/register', register);
 router.post('/login', login);
 
+// Add a logout route
+router.post('/logout', (req, res) => {
+  res.clearCookie('token');
+  res.status(200).json({ success: true, message: 'Logged out successfully' });
+});
+
 // Protected routes
-router.get('/profile', protect, getUserProfile);
+router.get('/me', protect, getUserProfile);
 
 export default router;

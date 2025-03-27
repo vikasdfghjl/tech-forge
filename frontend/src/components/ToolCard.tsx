@@ -30,6 +30,27 @@ const ToolCard = ({ tool, onUpvote, onWant, onAddComment, onDelete, onUpdate, in
     return 'Just now';
   };
 
+  // Make sure the upvote handler is passing the correct ID
+  const handleUpvote = () => {
+    const toolId = tool._id || tool.id;
+    if (!toolId) {
+      console.error("Tool ID is missing!");
+      return;
+    }
+    console.log("Upvoting tool with ID:", toolId);
+    onUpvote(toolId);
+  };
+
+  // Also update the want handler
+  const handleWant = () => {
+    const toolId = tool._id || tool.id;
+    if (!toolId) {
+      console.error("Tool ID is missing!");
+      return;
+    }
+    onWant(toolId);
+  };
+
   return (
     <motion.div
       className="tool-card w-full"
@@ -70,7 +91,7 @@ const ToolCard = ({ tool, onUpvote, onWant, onAddComment, onDelete, onUpdate, in
         <div className="flex space-x-2">
           <motion.button
             className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
-            onClick={() => onUpvote(tool.id)}
+            onClick={handleUpvote}
             whileTap={{ scale: 0.98 }}
             whileHover={{ scale: 1.05 }}
           >
@@ -80,7 +101,7 @@ const ToolCard = ({ tool, onUpvote, onWant, onAddComment, onDelete, onUpdate, in
           
           <motion.button
             className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-colors"
-            onClick={() => onWant(tool.id)}
+            onClick={handleWant}
             whileTap={{ scale: 0.98 }}
             whileHover={{ scale: 1.05 }}
           >

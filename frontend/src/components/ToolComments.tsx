@@ -1,55 +1,44 @@
-
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, Send, ChevronDown, ChevronUp } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { MessageSquare, Send } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 import { Comment } from "../hooks/useToolData";
 
-type ToolCommentsProps = {
+export interface ToolCommentsProps {
+  toolId: string;
   comments: Comment[];
-  onAddComment: (text: string) => void;
-};
+  onAddComment: (text: string) => Promise<void>;
+}
 
-const ToolComments = ({ comments = [], onAddComment }: ToolCommentsProps) => {
+const ToolComments = ({ toolId, comments, onAddComment }: ToolCommentsProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const { isAuthenticated } = useAuth();
   
+  // Format date for display
   const formatDate = (timestamp: number) => {
-    const now = Date.now();
-    const diff = now - timestamp;
-    const seconds = Math.floor(diff / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    if (minutes > 0) return `${minutes}m ago`;
-    return 'Just now';
+    return new Date(timestamp).toLocaleDateString();
   };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (commentText.trim()) {
-      onAddComment(commentText.trim());
+      await onAddComment(commentText.trim());
       setCommentText("");
     }
   };
-
-  // Ensure comments is always an array
+  
+  // Ensure comments is always an array even if it's undefined
   const safeComments = Array.isArray(comments) ? comments : [];
-  const totalComments = safeComments.length;
   
   return (
-    <div className="mt-4 pt-3 border-t border-border/40">
-      <button 
-        className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors w-full justify-between"
+    <div className="mt-4 pt-2">
+      <button
         onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
-        <span className="flex items-center gap-1.5">
-          <MessageCircle size={16} />
-          <span>{totalComments} Comment{totalComments !== 1 ? 's' : ''}</span>
-        </span>
-        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        <MessageSquare size={14} />
+        <span>{safeComments.length} {safeComments.length === 1 ? "comment" : "comments"}</span>
       </button>
       
       <AnimatePresence>
@@ -68,10 +57,11 @@ const ToolComments = ({ comments = [], onAddComment }: ToolCommentsProps) => {
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder="Add a comment..."
                 className="flex-1 px-3 py-1.5 text-sm rounded-full border border-input bg-background focus:border-primary/50 outline-none transition-all"
+                disabled={!isAuthenticated}
               />
               <button
                 type="submit"
-                disabled={!commentText.trim()}
+                disabled={!commentText.trim() || !isAuthenticated}
                 className="p-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send size={16} />

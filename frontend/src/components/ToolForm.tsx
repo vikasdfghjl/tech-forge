@@ -1,7 +1,10 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { Button } from "./ui/button";
+import { Textarea } from "./ui/textarea";
+import { Input } from "./ui/input";
 
 type ToolFormProps = {
   onSubmit: (name: string, description: string) => void;
@@ -11,6 +14,7 @@ type ToolFormProps = {
 const ToolForm = ({ onSubmit, isSubmitting }: ToolFormProps) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const { isAuthenticated } = useAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,56 +33,53 @@ const ToolForm = ({ onSubmit, isSubmitting }: ToolFormProps) => {
       transition={{ duration: 0.5, delay: 0.2 }}
     >
       <div className="px-6 py-4 border-b border-border/50">
-        <h3 className="font-medium text-base">Submit a new tool idea</h3>
+        <h2 className="text-xl font-semibold">Submit a Tool Idea</h2>
       </div>
+      
       <form onSubmit={handleSubmit} className="p-6 space-y-4">
-        <div>
-          <label 
-            htmlFor="toolName" 
-            className="block mb-2 text-sm font-medium text-muted-foreground"
-          >
+        <div className="space-y-2">
+          <label htmlFor="name" className="text-sm font-medium">
             Tool Name
           </label>
-          <input
-            id="toolName"
+          <Input
+            id="name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="What's your tool called?"
-            className="w-full px-4 py-2 rounded-lg border border-input bg-background focus:border-primary/50 outline-none transition-all duration-200"
+            placeholder="Enter tool name"
+            className="w-full"
             required
-            maxLength={50}
           />
         </div>
-        <div>
-          <label 
-            htmlFor="toolDescription" 
-            className="block mb-2 text-sm font-medium text-muted-foreground"
-          >
+        
+        <div className="space-y-2">
+          <label htmlFor="description" className="text-sm font-medium">
             Description
           </label>
-          <textarea
-            id="toolDescription"
+          <Textarea
+            id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="What does your tool do? Who is it for?"
-            className="w-full px-4 py-2 rounded-lg border border-input bg-background focus:border-primary/50 outline-none transition-all duration-200 min-h-[100px] resize-y"
+            placeholder="Describe what this tool would do"
+            className="w-full min-h-[120px]"
             required
-            maxLength={200}
           />
         </div>
-        <div className="flex justify-end">
-          <motion.button
-            type="submit"
-            className="button-primary flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed"
-            whileTap={{ scale: 0.98 }}
-            whileHover={{ scale: 1.02 }}
-            disabled={isSubmitting || !name.trim() || !description.trim()}
-          >
-            <span>{isSubmitting ? "Submitting..." : "Submit Tool Idea"}</span>
-            {!isSubmitting && <ArrowRight size={18} />}
-          </motion.button>
-        </div>
+        
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={isSubmitting || !isAuthenticated}
+        >
+          {isSubmitting ? "Submitting..." : "Submit Tool Idea"}
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+        
+        {!isAuthenticated && (
+          <p className="text-sm text-muted-foreground text-center mt-2">
+            You need to be logged in to submit a tool idea
+          </p>
+        )}
       </form>
     </motion.div>
   );

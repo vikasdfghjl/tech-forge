@@ -2,7 +2,6 @@ import Header from "@/components/Header";
 import Navbar from "@/components/Navbar";
 import ToolList from "@/components/ToolList";
 import SideColumn from "@/components/SideColumn";
-// Try direct import instead of alias
 import { useToolData } from "../hooks/useToolData";
 
 interface IndexProps {

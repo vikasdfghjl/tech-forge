@@ -4,7 +4,7 @@ import User, { IUser } from '../models/User';
 
 // Set up JWT secret from environment or use a default (for development only)
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-jwt-key'; // Use environment variables in production
-
+console.log('JWT Secret:', JWT_SECRET);
 // Generate JWT token
 const generateToken = (userId: string): string => {
   return jwt.sign({ id: userId }, JWT_SECRET, {
@@ -62,38 +62,50 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 };
 
 // Login user
-export const login = async (req: Request, res: Response): Promise<void> => {
+export const login = async (req: Request, res: Response): Promise<void | Response> => {
   try {
     const { email, password } = req.body as LoginRequest;
 
     // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password');
+    
     if (!user) {
-      res.status(401).json({ message: 'Invalid email or password' });
-      return;
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
-
-    // Check password
-    const isMatch = await user.comparePassword(password);
+    
+    // Check if password matches
+    const isMatch = await user.matchPassword(password);
+    
     if (!isMatch) {
-      res.status(401).json({ message: 'Invalid email or password' });
-      return;
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
-
-    // Generate token
+    
+    // Generate JWT token using the common function
     const token = generateToken(user._id.toString());
-
-    // Return user data without password and the token
-    res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      token
+    
+    // Set cookie with the token
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+    });
+    
+    console.log('[AUTH] Setting auth cookie for user:', user._id);
+    
+    // Return token and user data
+    res.status(200).json({
+      success: true,
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error during login' });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
