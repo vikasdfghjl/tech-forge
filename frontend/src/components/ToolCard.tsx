@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { ThumbsUp, Star, Clock } from "lucide-react";
 import { Tool } from "../hooks/useToolData";
 import ToolComments from "./ToolComments";
+import { toast } from "react-toastify";
 
 type ToolCardProps = {
   tool: Tool & { id?: string; _id?: string };
@@ -35,6 +36,7 @@ const ToolCard = ({ tool, onUpvote, onWant, onAddComment, onDelete, onUpdate, in
     const toolId = tool._id || tool.id;
     if (!toolId) {
       console.error("Tool ID is missing!");
+      toast.error("Cannot upvote: Tool ID is missing");
       return;
     }
     console.log("Upvoting tool with ID:", toolId);
@@ -46,6 +48,7 @@ const ToolCard = ({ tool, onUpvote, onWant, onAddComment, onDelete, onUpdate, in
     const toolId = tool._id || tool.id;
     if (!toolId) {
       console.error("Tool ID is missing!");
+      toast.error("Cannot mark as wanted: Tool ID is missing");
       return;
     }
     onWant(toolId);
@@ -113,7 +116,15 @@ const ToolCard = ({ tool, onUpvote, onWant, onAddComment, onDelete, onUpdate, in
 
       <ToolComments 
         comments={tool.comments || []} 
-        onAddComment={(text) => onAddComment(tool.id, text)} 
+        onAddComment={(text) => {
+          const toolId = tool._id || tool.id;
+          if (!toolId) {
+            console.error("Tool ID is missing!");
+            toast.error("Cannot add comment: Tool ID is missing");
+            return;
+          }
+          onAddComment(toolId, text);
+        }} 
       />
     </motion.div>
   );

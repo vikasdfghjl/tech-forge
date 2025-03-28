@@ -6,7 +6,8 @@ import {
   updateTool, 
   deleteTool,
   toggleUpvote,
-  upvoteTool
+  upvoteTool,
+  wantTool
 } from '../controllers/toolController';
 import { protect, optionalAuth } from '../middleware/auth';
 import { toggleWant, getInteractionStatus } from '../controllers/interactionController';
@@ -36,6 +37,8 @@ router.get('/:id', getToolById);
 router.post('/', protect, createTool);
 router.put('/:id', protect, updateTool);
 router.delete('/:id', protect, deleteTool);
+router.put('/:id/upvote', protect, upvoteTool);
+router.put('/:id/want', protect, wantTool);  // Add this route
 
 // Add a temporary public endpoint for testing upvotes
 router.post('/:id/upvote-test', async (req: Request, res: Response) => {

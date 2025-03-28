@@ -260,6 +260,9 @@ const toolController = {
         active: true
       });
 
+      // Update the actual tool document with the new upvote count
+      await Tool.findByIdAndUpdate(toolId, { upvotes: upvoteCount });
+
       res.status(200).json({ 
         success: true, 
         upvotes: upvoteCount,
@@ -268,6 +271,79 @@ const toolController = {
     } catch (error) {
       console.error('Upvote error:', error);
       res.status(500).json({ message: 'Server error while processing upvote' });
+    }
+  },
+
+  // Want a tool (mark as wanted)
+  wantTool: async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const toolId = req.params.id;
+
+      // Validate MongoDB ID
+      if (!mongoose.Types.ObjectId.isValid(toolId)) {
+        res.status(400).json({ message: 'Invalid tool ID' });
+        return;
+      }
+
+      // Check if user is authenticated
+      if (!req.user || !req.user._id) {
+        res.status(401).json({ message: 'You must be logged in to mark tools as wanted' });
+        return;
+      }
+
+      const tool = await Tool.findById(toolId);
+
+      if (!tool) {
+        res.status(404).json({ message: 'Tool not found' });
+        return;
+      }
+
+      // Check if user has already wanted this tool
+      const existingInteraction = await Interaction.findOne({
+        user: req.user._id,
+        itemId: toolId,
+        itemType: 'tool',
+        interactionType: 'want'
+      });
+
+      let userWanted = false;
+
+      if (existingInteraction) {
+        // Toggle the active state
+        existingInteraction.active = !existingInteraction.active;
+        await existingInteraction.save();
+        userWanted = existingInteraction.active;
+      } else {
+        // Create new want interaction
+        await Interaction.create({
+          user: req.user._id,
+          itemId: toolId,
+          itemType: 'tool',
+          interactionType: 'want',
+          active: true
+        });
+        userWanted = true;
+      }
+
+      // Count active wants
+      const wantCount = await Interaction.countDocuments({
+        itemId: toolId,
+        itemType: 'tool',
+        interactionType: 'want',
+        active: true
+      });
+
+      // Update the actual tool document with the new want count
+      await Tool.findByIdAndUpdate(toolId, { wants: wantCount });
+
+      res.status(200).json({ 
+        success: true, 
+        wants: wantCount,
+        userWanted 
+      });
+    } catch (error) {
+      console.error('Want error:', error);
+      res.status(500).json({ message: 'Server error while processing want request' });
     }
   }
 };

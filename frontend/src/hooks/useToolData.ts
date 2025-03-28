@@ -84,15 +84,29 @@ export function useToolData() {
     }
 
     try {
-      const result = await apiService.upvoteTool(id);
+      console.log(`Upvoting tool with ID: ${id}`);
+      // Show visual feedback immediately
+      toast.loading("Processing upvote...");
       
+      const result = await apiService.upvoteTool(id);
+      console.log("Upvote result:", result);
+      
+      // Update local state with the server response
       setTools(prev => 
-        prev.map(tool => 
-          tool._id === id ? { ...tool, upvotes: result.upvotes } : tool
-        )
+        prev.map(tool => {
+          if (tool._id === id) {
+            console.log(`Updating tool ${tool._id}: upvotes from ${tool.upvotes} to ${result.upvotes}`);
+            return { ...tool, upvotes: result.upvotes };
+          }
+          return tool;
+        })
       );
       
+      toast.dismiss();
+      toast.success(result.userUpvoted ? "Upvoted!" : "Upvote removed!");
+      
     } catch (err: unknown) {
+      toast.dismiss();
       console.error("Error upvoting tool:", err);
       toast.error(err instanceof Error ? err.message : "Failed to upvote tool");
     }
@@ -105,15 +119,29 @@ export function useToolData() {
     }
 
     try {
-      const result = await apiService.wantTool(id);
+      console.log(`Marking tool with ID: ${id} as wanted`);
+      // Show visual feedback immediately
+      toast.loading("Processing request...");
       
+      const result = await apiService.wantTool(id);
+      console.log("Want result:", result);
+      
+      // Update local state with the server response
       setTools(prev => 
-        prev.map(tool => 
-          tool._id === id ? { ...tool, wants: result.wants } : tool
-        )
+        prev.map(tool => {
+          if (tool._id === id) {
+            console.log(`Updating tool ${tool._id}: wants from ${tool.wants} to ${result.wants}`);
+            return { ...tool, wants: result.wants };
+          }
+          return tool;
+        })
       );
       
+      toast.dismiss();
+      toast.success(result.userWanted ? "Added to wanted tools!" : "Removed from wanted tools!");
+      
     } catch (err: unknown) {
+      toast.dismiss();
       console.error("Error marking tool as wanted:", err);
       toast.error(err instanceof Error ? err.message : "Failed to mark tool as wanted");
     }

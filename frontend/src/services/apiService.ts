@@ -33,26 +33,42 @@ export async function createTool(toolData: { name: string; description: string }
 }
 
 export async function upvoteTool(id: string): Promise<{ upvotes: number; userUpvoted: boolean }> {
+  // Get token from localStorage
+  const token = localStorage.getItem('token');
+  
   const response = await fetch(`${API_URL}/tools/${id}/upvote`, {
-    method: 'POST',
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : '',
+    },
     credentials: 'include'
   });
   
   if (!response.ok) {
-    throw new Error('Failed to upvote tool');
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to upvote tool');
   }
   
   return response.json();
 }
 
 export async function wantTool(id: string): Promise<{ wants: number; userWanted: boolean }> {
+  // Get token from localStorage
+  const token = localStorage.getItem('token');
+  
   const response = await fetch(`${API_URL}/tools/${id}/want`, {
-    method: 'POST',
+    method: 'PUT', // Changed from 'POST' to 'PUT' to match backend route
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : '',
+    },
     credentials: 'include'
   });
   
   if (!response.ok) {
-    throw new Error('Failed to mark tool as wanted');
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to mark tool as wanted');
   }
   
   return response.json();

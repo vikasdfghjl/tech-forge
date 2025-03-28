@@ -57,9 +57,19 @@ export const logout = () => {
 // Tool interaction functions
 export const toggleUpvote = async (toolId: string) => {
   try {
-    // Include token in request body as well for additional security
+    // Get token from localStorage
     const token = localStorage.getItem('token');
-    const response = await api.put(`/tools/${toolId}/upvote`, { token });
+    
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+    
+    const response = await api.put(`/tools/${toolId}/upvote`, {}, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
     return response.data;
   } catch (error) {
     console.error('Upvote error:', error);
@@ -69,7 +79,19 @@ export const toggleUpvote = async (toolId: string) => {
 
 export const toggleWant = async (toolId: string) => {
   try {
-    const response = await api.put(`/tools/${toolId}/want`);
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+    
+    const response = await api.put(`/tools/${toolId}/want`, {}, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
     return response.data;
   } catch (error) {
     console.error('Want error:', error);
