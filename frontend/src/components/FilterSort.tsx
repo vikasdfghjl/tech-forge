@@ -1,6 +1,5 @@
-
 import { motion } from "framer-motion";
-import { Filter, ArrowDownAZ, ArrowUpAZ, ThumbsUp, Star } from "lucide-react";
+import { Filter, ArrowDownAZ, ArrowUpAZ, ThumbsUp, Briefcase } from "lucide-react"; // Changed Star to Briefcase
 import { SortOption, FilterOption } from "../hooks/useToolData";
 
 type FilterSortProps = {
@@ -107,8 +106,8 @@ const FilterSort = ({
                 : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
             }`}
           >
-            <Star size={12} />
-            <span>Wants</span>
+            <Briefcase size={12} /> {/* Changed from Star to Briefcase */}
+            <span>Funds</span> {/* Optionally changed label from "Wants" to "Funds" */}
           </button>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Heart, MessageSquare, Trash2 } from "lucide-react";
+import { ArrowUp, Briefcase, MessageSquare, Trash2 } from "lucide-react"; // Changed Heart to Briefcase
 import { Tool } from "../hooks/useToolData";
 import { useAuth } from "../contexts/AuthContext";
 import ToolForm from "./ToolForm";
@@ -97,7 +97,7 @@ const ToolList = ({
                       onClick={() => onWant(tool._id)}
                       disabled={!isAuthenticated}
                     >
-                      <Heart size={16} />
+                      <Briefcase size={16} /> {/* Changed from Heart to Briefcase */}
                       <span>{tool.wants || 0}</span>
                     </button>
                     

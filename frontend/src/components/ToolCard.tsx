@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ThumbsUp, Star, Clock } from "lucide-react";
+import { ThumbsUp, Briefcase, Clock } from "lucide-react"; // Changed Star to Briefcase
 import { Tool } from "../hooks/useToolData";
 import ToolComments from "./ToolComments";
 import { toast } from "react-toastify";
@@ -108,7 +108,7 @@ const ToolCard = ({ tool, onUpvote, onWant, onAddComment, onDelete, onUpdate, in
             whileTap={{ scale: 0.98 }}
             whileHover={{ scale: 1.05 }}
           >
-            <Star size={14} />
+            <Briefcase size={14} /> {/* Changed from Star to Briefcase */}
             <span className="text-sm font-medium">{tool.wants}</span>
           </motion.button>
         </div>
