@@ -48,7 +48,7 @@ const App = () => {
               <Navbar isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
               <main className="container mx-auto py-8">
                 <Routes>
-                  <Route path="/" element={<Index isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
+                  <Route path="/" element={<Index />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
                   <Route 

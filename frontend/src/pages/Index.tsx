@@ -1,20 +1,21 @@
 import Header from "@/components/Header";
-import Navbar from "@/components/Navbar";
 import ToolList from "@/components/ToolList";
 import SideColumn from "@/components/SideColumn";
 import { useToolData } from "../hooks/useToolData";
 
-interface IndexProps {
-  isDarkMode: boolean;
-  toggleTheme: () => void;
-}
+// Remove the props interface as we no longer need these props
+// The isDarkMode and toggleTheme are now only used in the Navbar component
 
-const Index = ({ isDarkMode, toggleTheme }: IndexProps) => {
+const Index = () => {
   const { tools, upvoteTool, wantTool, addComment, addTool, deleteTool } = useToolData();
+
+  // Create a wrapper function to convert the string parameters to a NewTool object
+  const handleAddTool = async (name: string, description: string) => {
+    await addTool({ name, description });
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
       <Header />
       <main className="container mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8 py-8">
         <div className="lg:col-span-3 order-3 lg:order-1">
@@ -24,14 +25,9 @@ const Index = ({ isDarkMode, toggleTheme }: IndexProps) => {
           <ToolList 
             tools={tools} 
             onUpvote={upvoteTool} 
-            onWant={wantTool} 
+            onWant={wantTool}
             onAddComment={addComment}
-            onAddTool={(name, description) => addTool({ 
-              name, 
-              description, 
-              timestamp: Date.now(), 
-              creator: 'Anonymous' 
-            })}
+            onAddTool={handleAddTool}
             onDelete={deleteTool}
           />
         </div>
