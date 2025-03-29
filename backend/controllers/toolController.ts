@@ -3,10 +3,12 @@ import mongoose from 'mongoose';
 import Tool from "../models/Tool";
 import Interaction from "../models/Interaction";
 import { IUser } from '../models/User';
+import { IComment } from '../models/Tool';
 
 // Extended Request interface to include user property
 interface AuthRequest extends Request {
   user?: IUser;
+  isAuthenticated?: boolean;
 }
 
 // Consolidate all controller functions into a single object
@@ -120,7 +122,7 @@ const toolController = {
   },
 
   // Toggle upvote for a tool
-  toggleUpvote: async (req: Request, res: Response): Promise<void> => {
+  toggleUpvote: async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       console.log('[DEBUG UPVOTE] Starting upvote toggle for tool');
       console.log('[DEBUG UPVOTE] User:', req.user?._id);
@@ -344,6 +346,79 @@ const toolController = {
     } catch (error) {
       console.error('Want error:', error);
       res.status(500).json({ message: 'Server error while processing want request' });
+    }
+  },
+
+  // Add a new comment to a tool
+  addComment: async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const toolId = req.params.id;
+      const { text } = req.body;
+  
+      // Validate MongoDB ID
+      if (!mongoose.Types.ObjectId.isValid(toolId)) {
+        res.status(400).json({ message: 'Invalid tool ID' });
+        return;
+      }
+  
+      // Check if user is authenticated
+      if (!req.user || !req.user._id) {
+        res.status(401).json({ message: 'You must be logged in to comment' });
+        return;
+      }
+  
+      // Validate comment text
+      if (!text || typeof text !== 'string' || text.trim() === '') {
+        res.status(400).json({ message: 'Comment text is required' });
+        return;
+      }
+  
+      // Find the tool by ID
+      const tool = await Tool.findById(toolId);
+      if (!tool) {
+        res.status(404).json({ message: 'Tool not found' });
+        return;
+      }
+  
+      // Create a new comment
+      const newComment = {
+        text: text.trim(),
+        author: req.user._id,
+        createdAt: new Date()
+      };
+  
+      // Add the comment to the tool
+      tool.comments.push(newComment as any);
+      await tool.save();
+  
+      // Populate author information
+      const populatedTool = await Tool.findById(toolId)
+        .populate({
+          path: 'comments.author',
+          select: 'username name email'
+        });
+  
+      if (!populatedTool) {
+        res.status(404).json({ message: 'Tool not found after saving comment' });
+        return;
+      }
+  
+      // Get the newly added comment
+      const addedComment = populatedTool.comments[populatedTool.comments.length - 1];
+      const authorObj = addedComment.author as any;
+  
+      // Return the added comment
+      res.status(201).json({
+        _id: addedComment._id,
+        id: addedComment._id, // For frontend compatibility
+        text: addedComment.text,
+        author: authorObj.username || authorObj.name || authorObj.email || 'Anonymous',
+        createdAt: addedComment.createdAt,
+        timestamp: addedComment.createdAt.getTime()
+      });
+    } catch (error) {
+      console.error('Error in addComment:', error);
+      res.status(500).json({ message: 'Server error while adding comment' });
     }
   }
 };

@@ -14,6 +14,7 @@ export interface Tool {
   comments?: Comment[];
   creator?: string;
   timestamp?: number;
+  bookmarked?: boolean; // Add bookmarked flag
 }
 
 export interface Comment {
@@ -161,36 +162,86 @@ export function useToolData() {
       toast.error(err instanceof Error ? err.message : "Failed to delete tool");
     }
   };
+
   const addComment = async (toolId: string, commentText: string) => {
     if (!isAuthenticated) {
       toast.error("You must be logged in to comment");
-      return;
+      throw new Error("Authentication required");
     }
 
-      try {
-        const newComment = await apiService.addComment(toolId, commentText);
-        
-        setTools(prev => 
-          prev.map(tool => {
-            if (tool._id === toolId) {
-              // Ensure the new comment matches our Comment interface
-              const typedComment: Comment = {
-                ...newComment,
-                timestamp: Date.now() // Always set a new timestamp for consistency
-              };
-              const updatedComments = [...(tool.comments || []), typedComment];
-              return { ...tool, comments: updatedComments };
-            }
-            return tool;
-          })
-        );
-        
-        toast.success("Comment added");
-      } catch (err: unknown) {
-        console.error("Error adding comment:", err);
-        toast.error(err instanceof Error ? err.message : "Failed to add comment");
-      }
-    };
+    try {
+      console.log("Adding comment to tool:", toolId, commentText);
+      const newComment = await apiService.addComment(toolId, commentText);
+      
+      // Update the local state with the new comment
+      setTools(prev => 
+        prev.map(tool => {
+          if (tool._id === toolId) {
+            // Ensure the new comment matches our Comment interface
+            const typedComment: Comment = {
+              ...newComment,
+              id: newComment.id || newComment._id || Date.now().toString(),
+              author: newComment.author || "Anonymous",
+              timestamp: newComment.timestamp || Date.now()
+            };
+            
+            // Create a new array with the existing comments plus the new one
+            const updatedComments = [...(tool.comments || []), typedComment];
+            return { ...tool, comments: updatedComments };
+          }
+          return tool;
+        })
+      );
+      
+      toast.success("Comment added successfully");
+      return newComment;
+    } catch (err: unknown) {
+      console.error("Error adding comment:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to add comment");
+      throw err;
+    }
+  };
+
+  // New function to handle bookmarking
+  const bookmarkTool = async (id: string) => {
+    if (!isAuthenticated) {
+      toast.error("You must be logged in to bookmark tools");
+      throw new Error("Authentication required");
+    }
+
+    try {
+      const response = await apiService.bookmarkTool(id);
+      
+      // Update the local state based on the response
+      setTools(prevTools => 
+        prevTools.map(tool => 
+          tool._id === id
+            ? { ...tool, bookmarked: response.bookmarked } 
+            : tool
+        )
+      );
+      
+      return response;
+    } catch (error) {
+      console.error('Error bookmarking tool:', error);
+      throw error;
+    }
+  };
+
+  // Function to get bookmarked tools
+  const getBookmarkedTools = async () => {
+    if (!isAuthenticated) {
+      toast.error("You must be logged in to view bookmarked tools");
+      throw new Error("Authentication required");
+    }
+
+    try {
+      return await apiService.getBookmarkedTools();
+    } catch (error) {
+      console.error('Error fetching bookmarked tools:', error);
+      throw error;
+    }
+  };
   
     return {
       tools,
@@ -201,5 +252,7 @@ export function useToolData() {
       wantTool,
       deleteTool,
       addComment,
+      bookmarkTool, // Add new bookmark function
+      getBookmarkedTools, // Add function to get bookmarked tools
     };
   }

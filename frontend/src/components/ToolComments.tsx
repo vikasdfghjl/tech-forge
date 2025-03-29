@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { MessageSquare, Send } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Comment } from "../hooks/useToolData";
+import { toast } from "react-toastify"; // Add toast import
 
 export interface ToolCommentsProps {
   toolId: string;
@@ -13,23 +14,36 @@ export interface ToolCommentsProps {
 const ToolComments = ({ toolId, comments, onAddComment }: ToolCommentsProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add state for submission status
   const { isAuthenticated } = useAuth();
   
   // Format date for display
-  const formatDate = (timestamp: number) => {
+  const formatDate = (timestamp?: number) => {
+    if (!timestamp) return "Unknown date";
     return new Date(timestamp).toLocaleDateString();
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (commentText.trim()) {
+    if (!commentText.trim() || isSubmitting) return;
+    
+    try {
+      setIsSubmitting(true);
+      console.log("Submitting comment:", commentText, "for tool:", toolId);
       await onAddComment(commentText.trim());
       setCommentText("");
+      toast.success("Comment added successfully");
+    } catch (error) {
+      console.error("Error submitting comment:", error);
+      toast.error("Failed to add comment. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
   // Ensure comments is always an array even if it's undefined
   const safeComments = Array.isArray(comments) ? comments : [];
+  console.log("Comments for tool:", toolId, safeComments);
   
   return (
     <div className="mt-4 pt-2">

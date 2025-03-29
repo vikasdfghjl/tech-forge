@@ -10,6 +10,9 @@ export interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   matchPassword(enteredPassword: string): Promise<boolean>;
+  upvotedTools: mongoose.Types.ObjectId[];
+  wantedTools: mongoose.Types.ObjectId[];
+  bookmarkedTools: mongoose.Types.ObjectId[]; // Add bookmarkedTools
 }
 
 // Create the User schema
@@ -39,6 +42,9 @@ const UserSchema = new Schema<IUser>(
       enum: ['user', 'admin'],
       default: 'user',
     },
+    upvotedTools: [{ type: Schema.Types.ObjectId, ref: "Tool" }],
+    wantedTools: [{ type: Schema.Types.ObjectId, ref: "Tool" }],
+    bookmarkedTools: [{ type: Schema.Types.ObjectId, ref: "Tool" }], // Add bookmarkedTools field
   },
   {
     timestamps: true,
