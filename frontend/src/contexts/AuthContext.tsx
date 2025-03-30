@@ -6,7 +6,14 @@ interface User {
   _id: string;
   name: string;
   email: string;
+  username: string; // Added username
   role: string;
+  dateOfBirth?: Date | string; // Added dateOfBirth
+  gender?: string; // Added gender
+  country?: string; // Added country
+  bookmarkedTools?: string[]; // Added bookmarkedTools
+  upvotedTools?: string[]; // Added upvotedTools
+  wantedTools?: string[]; // Added wantedTools
 }
 
 interface AuthContextType {
@@ -14,8 +21,16 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
+  signup: (
+    name: string, 
+    email: string, 
+    password: string, 
+    username?: string, 
+    dateOfBirth?: string, 
+    gender?: string, 
+    country?: string
+  ) => Promise<void>;
   logout: () => void;
   clearError: () => void;
 }
@@ -62,7 +77,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     checkAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (identifier: string, password: string) => {
     setIsLoading(true);
     setError(null);
     
@@ -73,7 +88,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ identifier, password }),
       });
       
       if (!response.ok) {
@@ -81,8 +96,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         throw new Error(data.message || 'Login failed');
       }
       
-      const userData = await response.json();
-      setUser(userData);
+      const data = await response.json();
+      setUser(data.user);
+      localStorage.setItem('token', data.token);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed';
       setError(errorMessage);
@@ -92,7 +108,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const signup = async (name: string, email: string, password: string) => {
+  const signup = async (
+    name: string, 
+    email: string, 
+    password: string, 
+    username?: string, 
+    dateOfBirth?: string, 
+    gender?: string, 
+    country?: string
+  ) => {
     setIsLoading(true);
     setError(null);
     
@@ -103,7 +127,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ 
+          name, 
+          email, 
+          password,
+          username,
+          dateOfBirth,
+          gender,
+          country 
+        }),
       });
       
       if (!response.ok) {
@@ -112,7 +144,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       
       const userData = await response.json();
-      setUser(userData); // Add this line to set the user on successful signup
+      setUser(userData);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Signup failed';
       setError(errorMessage);

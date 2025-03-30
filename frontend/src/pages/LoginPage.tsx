@@ -33,8 +33,11 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email.trim() || !password.trim()) {
-      setLocalError("Please enter both email and password");
+    // Allow login with email or username
+    const identifier = email.trim(); // This could be either email or username
+    
+    if (!identifier || !password.trim()) {
+      setLocalError("Please enter both email/username and password");
       return;
     }
 
@@ -42,12 +45,9 @@ const LoginPage = () => {
     setLocalError("");
     
     try {
-      const success = await login(email, password);
-      
-      if (success) {
-        toast.success("Login successful!");
-        // Navigate is handled by the isAuthenticated effect above
-      }
+      await login(identifier, password);
+      toast.success("Login successful!");
+      // Navigate is handled by the isAuthenticated effect above
     } catch (err) {
       setLocalError("An unexpected error occurred. Please try again.");
       console.error("Login error:", err);
@@ -89,12 +89,12 @@ const LoginPage = () => {
 
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium">
-              Email
+              Email or Username
             </label>
             <Input
               id="email"
-              type="email"
-              placeholder="your@email.com"
+              type="text" // Changed from email to text to allow username login
+              placeholder="your@email.com or username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full"

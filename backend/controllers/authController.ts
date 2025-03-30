@@ -16,31 +16,54 @@ interface RegisterRequest {
   name: string;
   email: string;
   password: string;
+  username?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  country?: string;
 }
 
 interface LoginRequest {
-  email: string;
+  identifier: string; // Can be email or username
   password: string;
 }
 
 // Register a new user
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, email, password } = req.body as RegisterRequest;
+    const { name, email, password, username, dateOfBirth, gender, country } = req.body as RegisterRequest;
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    // Check if user already exists by email
+    const existingUserByEmail = await User.findOne({ email });
+    if (existingUserByEmail) {
       res.status(400).json({ message: 'User already exists with this email' });
       return;
     }
 
+    // Check if username is taken
+    if (username) {
+      const existingUserByUsername = await User.findOne({ username });
+      if (existingUserByUsername) {
+        res.status(400).json({ message: 'This username is already taken' });
+        return;
+      }
+    }
+
     // Create new user
-    const user = new User({
+    const newUsername = username || email.split('@')[0]; // Use email prefix as username if not provided
+    
+    const userData: any = {
       name,
       email,
+      username: newUsername,
       password
-    });
+    };
+    
+    // Add optional fields if they exist
+    if (dateOfBirth) userData.dateOfBirth = new Date(dateOfBirth);
+    if (gender) userData.gender = gender;
+    if (country) userData.country = country;
+    
+    const user = new User(userData);
 
     await user.save();
 
@@ -52,7 +75,11 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       _id: user._id,
       name: user.name,
       email: user.email,
+      username: user.username,
       role: user.role,
+      dateOfBirth: user.dateOfBirth,
+      gender: user.gender,
+      country: user.country,
       token
     });
   } catch (error) {
@@ -64,10 +91,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 // Login user
 export const login = async (req: Request, res: Response): Promise<void | Response> => {
   try {
-    const { email, password } = req.body as LoginRequest;
+    const { identifier, password } = req.body as LoginRequest;
 
-    // Find user by email
-    const user = await User.findOne({ email }).select('+password');
+    // Find user by email or username
+    const user = await User.findOne({ 
+      $or: [{ email: identifier }, { username: identifier }]
+    }).select('+password');
     
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -100,7 +129,11 @@ export const login = async (req: Request, res: Response): Promise<void | Respons
         _id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        username: user.username,
+        role: user.role,
+        dateOfBirth: user.dateOfBirth,
+        gender: user.gender,
+        country: user.country
       }
     });
   } catch (error) {

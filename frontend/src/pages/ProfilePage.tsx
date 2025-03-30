@@ -90,9 +90,31 @@ const ProfilePage = () => {
               <p className="font-medium">{user.name}</p>
             </div>
             <div>
+              <p className="text-sm text-muted-foreground">Username</p>
+              <p className="font-medium">{user.username}</p>
+            </div>
+            <div>
               <p className="text-sm text-muted-foreground">Email</p>
               <p className="font-medium">{user.email}</p>
             </div>
+            {user.dateOfBirth && (
+              <div>
+                <p className="text-sm text-muted-foreground">Date of Birth</p>
+                <p className="font-medium">{new Date(user.dateOfBirth).toLocaleDateString()}</p>
+              </div>
+            )}
+            {user.gender && (
+              <div>
+                <p className="text-sm text-muted-foreground">Gender</p>
+                <p className="font-medium capitalize">{user.gender}</p>
+              </div>
+            )}
+            {user.country && (
+              <div>
+                <p className="text-sm text-muted-foreground">Country</p>
+                <p className="font-medium">{user.country}</p>
+              </div>
+            )}
             <div>
               <p className="text-sm text-muted-foreground">Account Type</p>
               <p className="font-medium capitalize">{user.role}</p>

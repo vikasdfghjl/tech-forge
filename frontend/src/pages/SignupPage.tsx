@@ -6,10 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
+import { Select } from "@/components/ui/select";
 
 const SignupPage = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [gender, setGender] = useState("");
+  const [country, setCountry] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,7 +40,8 @@ const SignupPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+    if (!name.trim() || !email.trim() || !username.trim() || !dateOfBirth || 
+        !gender || !country || !password.trim() || !confirmPassword.trim()) {
       setLocalError("Please fill in all fields");
       return;
     }
@@ -50,16 +56,27 @@ const SignupPage = () => {
       return;
     }
 
+    // Validate date of birth (must be at least 13 years old)
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    if (age < 13) {
+      setLocalError("You must be at least 13 years old to register");
+      return;
+    }
+
     setIsSubmitting(true);
     setLocalError("");
     
     try {
-      const success = await signup(name, email, password);
+      await signup(name, email, password, username, dateOfBirth, gender, country);
       
-      if (success) {
-        toast.success("Account created successfully!");
-        // Navigate is handled by the isAuthenticated effect above
-      }
+      toast.success("Account created successfully!");
+      // Navigate is handled by the isAuthenticated effect above
     } catch (err) {
       setLocalError("An unexpected error occurred. Please try again.");
       console.error("Signup error:", err);
@@ -115,6 +132,21 @@ const SignupPage = () => {
           </div>
 
           <div className="space-y-2">
+            <label htmlFor="username" className="text-sm font-medium">
+              Username
+            </label>
+            <Input
+              id="username"
+              type="text"
+              placeholder="Choose a unique username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium">
               Email
             </label>
@@ -127,6 +159,61 @@ const SignupPage = () => {
               className="w-full"
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="dateOfBirth" className="text-sm font-medium">
+              Date of Birth
+            </label>
+            <Input
+              id="dateOfBirth"
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              className="w-full"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="gender" className="text-sm font-medium">
+              Gender
+            </label>
+            <select
+              id="gender"
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              className="w-full h-10 px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-input"
+              required
+            >
+              <option value="" disabled>Select gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="non-binary">Non-binary</option>
+              <option value="prefer-not-to-say">Prefer not to say</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="country" className="text-sm font-medium">
+              Country
+            </label>
+            <select
+              id="country"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              className="w-full h-10 px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-input"
+              required
+            >
+              <option value="" disabled>Select country</option>
+              <option value="US">United States</option>
+              <option value="UK">United Kingdom</option>
+              <option value="CA">Canada</option>
+              <option value="AU">Australia</option>
+              <option value="IN">India</option>
+              {/* Add more countries as needed */}
+              <option value="other">Other</option>
+            </select>
           </div>
 
           <div className="space-y-2">

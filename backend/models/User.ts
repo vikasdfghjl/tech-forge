@@ -5,14 +5,16 @@ import bcrypt from 'bcryptjs';
 export interface IUser extends Document {
   name: string;
   email: string;
+  username: string;
   password: string;
-  role: 'user' | 'admin';
-  createdAt: Date;
-  updatedAt: Date;
+  role: string;
+  dateOfBirth?: Date;
+  gender?: string;
+  country?: string;
   matchPassword(enteredPassword: string): Promise<boolean>;
   upvotedTools: mongoose.Types.ObjectId[];
   wantedTools: mongoose.Types.ObjectId[];
-  bookmarkedTools: mongoose.Types.ObjectId[]; // Add bookmarkedTools
+  bookmarkedTools: mongoose.Types.ObjectId[];
 }
 
 // Create the User schema
@@ -31,6 +33,12 @@ const UserSchema = new Schema<IUser>(
         'Please add a valid email',
       ],
     },
+    username: {
+      type: String,
+      required: [true, 'Please add a username'],
+      unique: true,
+      trim: true
+    },
     password: {
       type: String,
       required: [true, 'Please add a password'],
@@ -42,9 +50,19 @@ const UserSchema = new Schema<IUser>(
       enum: ['user', 'admin'],
       default: 'user',
     },
+    dateOfBirth: {
+      type: Date
+    },
+    gender: {
+      type: String,
+      enum: ['male', 'female', 'non-binary', 'prefer-not-to-say']
+    },
+    country: {
+      type: String
+    },
     upvotedTools: [{ type: Schema.Types.ObjectId, ref: "Tool" }],
     wantedTools: [{ type: Schema.Types.ObjectId, ref: "Tool" }],
-    bookmarkedTools: [{ type: Schema.Types.ObjectId, ref: "Tool" }], // Add bookmarkedTools field
+    bookmarkedTools: [{ type: Schema.Types.ObjectId, ref: "Tool" }],
   },
   {
     timestamps: true,

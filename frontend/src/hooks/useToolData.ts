@@ -12,7 +12,11 @@ export interface Tool {
   createdAt: string;
   updatedAt: string;
   comments?: Comment[];
-  creator?: string;
+  creator: {
+    _id: string;
+    name: string;
+    username: string; // Add username
+  };
   timestamp?: number;
   bookmarked?: boolean; // Add bookmarked flag
 }
