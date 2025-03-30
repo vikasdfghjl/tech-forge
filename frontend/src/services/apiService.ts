@@ -27,164 +27,102 @@ function isApiError(error: unknown): error is ApiErrorObject {
   );
 }
 
-export async function fetchTools(): Promise<Tool[]> {
-  const response = await fetch(`${API_URL}/tools`, {
-    credentials: 'include'
-  });
+// API base URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+// Default fetch options with credentials
+const defaultOptions = {
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  credentials: 'include' as RequestCredentials,
+};
+
+// Helper function for fetch requests
+async function fetchApi(endpoint: string, options = {}) {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const response = await fetch(url, { ...defaultOptions, ...options });
   
   if (!response.ok) {
-    throw new Error('Failed to fetch tools');
+    const error = await response.json().catch(() => ({
+      message: response.statusText,
+    }));
+    throw new Error(error.message || 'Something went wrong');
   }
   
   return response.json();
 }
 
-export async function createTool(toolData: { name: string; description: string }): Promise<Tool> {
-  const response = await fetch(`${API_URL}/tools`, {
+// Fetch all tools
+export const fetchTools = async () => {
+  return fetchApi('/api/tools');
+};
+
+// Define a type for the tool creation payload
+interface CreateToolPayload {
+  name: string;
+  description: string;
+  category?: string;
+  website?: string;
+  logo?: string;
+  tags?: string[];
+}
+
+// Create a new tool
+export const createTool = async (toolData: CreateToolPayload) => {
+  return fetchApi('/api/tools', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-    body: JSON.stringify(toolData)
+    body: JSON.stringify(toolData),
   });
-  
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to create tool');
-  }
-  
-  return response.json();
-}
+};
 
-export async function upvoteTool(id: string): Promise<{ upvotes: number; userUpvoted: boolean }> {
-  // Get token from localStorage
-  const token = localStorage.getItem('token');
-  
-  const response = await fetch(`${API_URL}/tools/${id}/upvote`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : '',
-    },
-    credentials: 'include'
+// Get tools created by the current user
+export const getPostedTools = async () => {
+  const response = await fetchApi('/api/tools/user/me');
+  return response.tools || [];
+};
+
+// Get tools bookmarked by the current user
+export const getBookmarkedTools = async () => {
+  const response = await fetchApi('/api/interactions/bookmarks');
+  return response.bookmarkedTools || [];
+};
+
+// Upvote a tool
+export const upvoteTool = async (toolId: string) => {
+  return fetchApi(`/api/tools/${toolId}/upvote`, {
+    method: 'POST',
   });
-  
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Failed to upvote tool');
-  }
-  
-  return response.json();
-}
+};
 
-export async function wantTool(id: string): Promise<{ wants: number; userWanted: boolean }> {
-  // Get token from localStorage
-  const token = localStorage.getItem('token');
-  
-  const response = await fetch(`${API_URL}/tools/${id}/want`, {
-    method: 'PUT', // Changed from 'POST' to 'PUT' to match backend route
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : '',
-    },
-    credentials: 'include'
+// Want a tool
+export const wantTool = async (toolId: string) => {
+  return fetchApi(`/api/tools/${toolId}/want`, {
+    method: 'POST',
   });
-  
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Failed to mark tool as wanted');
-  }
-  
-  return response.json();
-}
+};
 
-export async function deleteTool(id: string): Promise<void> {
-  const response = await fetch(`${API_URL}/tools/${id}`, {
+// Delete a tool
+export const deleteTool = async (toolId: string) => {
+  return fetchApi(`/api/tools/${toolId}`, {
     method: 'DELETE',
-    credentials: 'include'
   });
-  
-  if (!response.ok) {
-    throw new Error('Failed to delete tool');
-  }
-}
+};
 
-// Update the Comment interface to match both frontend and backend expectations
-interface Comment {
-  id?: string;
-  _id?: string;
-  text: string;
-  author?: string;
-  createdAt?: string;
-  timestamp?: number;
-}
+// Add a comment to a tool
+export const addComment = async (toolId: string, text: string) => {
+  return fetchApi(`/api/tools/${toolId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+  });
+};
 
-export async function addComment(toolId: string, text: string): Promise<Comment> {
-  console.log(`Adding comment to tool ${toolId}: "${text}"`);
-  
-  try {
-    const response = await fetch(`${API_URL}/tools/${toolId}/comments`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({ text })
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('API Error:', errorData);
-      throw new Error(errorData.message || `Failed to add comment (Status: ${response.status})`);
-    }
-    
-    const commentData = await response.json();
-    console.log('Comment added successfully:', commentData);
-    
-    // Ensure the response has the fields expected by the frontend
-    return {
-      ...commentData,
-      id: commentData.id || commentData._id,  // Handle both id formats
-      timestamp: commentData.timestamp || new Date(commentData.createdAt).getTime() // Add timestamp if missing
-    };
-  } catch (error) {
-    console.error('Error in addComment API call:', error);
-    throw error;
-  }
-}
-
-// Add these two methods for bookmark functionality
-export async function bookmarkTool(toolId: string) {
-  try {
-    const response = await axios.post(
-      `${API_URL}/interactions/bookmark/${toolId}`,
-      {},
-      { withCredentials: true }
-    );
-    return response.data;
-  } catch (error) {
-    handleApiError(error);
-    throw error;
-  }
-}
-
-interface BookmarkResponse {
-  bookmarkedTools: Tool[];
-}
-
-export async function getBookmarkedTools() {
-  try {
-    const response = await axios.get<BookmarkResponse>(
-      `${API_URL}/interactions/bookmarks`,
-      { withCredentials: true }
-    );
-    return response.data.bookmarkedTools;
-  } catch (error) {
-    handleApiError(error);
-    throw error;
-  }
-}
+// Bookmark a tool
+export const bookmarkTool = async (toolId: string) => {
+  return fetchApi(`/api/interactions/bookmark/${toolId}`, {
+    method: 'POST',
+  });
+};
 
 function handleApiError(error: unknown): never {
   if (isApiError(error)) {

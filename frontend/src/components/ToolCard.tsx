@@ -68,7 +68,11 @@ const ToolCard = ({ tool, onUpvote, onWant, onAddComment, onDelete, onUpdate, on
   };
 
   // Add console logs to debug visibility issue
-  console.log("Rendering ToolCard for:", tool.name, "Bookmarked status:", tool.bookmarked);
+  console.log("Rendering ToolCard for:", tool.name, {
+    bookmarked: tool.bookmarked,
+    bookmarkType: typeof tool.bookmarked,
+    toolId: tool._id || tool.id,
+  });
 
   // Handle adding comments with proper error handling
   const handleAddComment = async (text: string) => {
@@ -92,15 +96,39 @@ const ToolCard = ({ tool, onUpvote, onWant, onAddComment, onDelete, onUpdate, on
 
   return (
     <motion.div
-      className="tool-card w-full p-4 border rounded-lg mb-4 bg-white shadow-sm"
+      className="tool-card w-full p-4 border rounded-lg mb-4 bg-white shadow-sm relative"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.1 * index }}
       layout
     >
+      {/* Bookmark button - simplified and improved visibility */}
+      <div className="absolute top-3 right-3 z-20">
+        <button
+          className={`flex items-center justify-center w-9 h-9 rounded-full shadow border-2 ${
+            tool.bookmarked 
+              ? 'bg-red-500 text-white border-red-600' 
+              : 'bg-white text-red-500 border-red-300'
+          } hover:scale-105 transition-all duration-200`}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleBookmark();
+          }}
+          title={tool.bookmarked ? "Remove from bookmarks" : "Add to bookmarks"}
+          data-testid="bookmark-button"
+        >
+          <Bookmark 
+            size={20} 
+            fill={tool.bookmarked ? "currentColor" : "none"} 
+            strokeWidth={2}
+            className="pointer-events-none"
+          />
+        </button>
+      </div>
+      
       <div className="flex justify-between items-start mb-3">
         <h3 className="font-semibold text-lg">{tool.name}</h3>
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 mr-10"> {/* Added margin to make space for bookmark icon */}
           <button
             onClick={onDelete} // Call onDelete when clicked
             className="text-red-500 hover:text-red-700 transition-colors"
@@ -149,19 +177,6 @@ const ToolCard = ({ tool, onUpvote, onWant, onAddComment, onDelete, onUpdate, on
           >
             <Briefcase size={14} /> {/* Changed from Star to Briefcase */}
             <span className="text-sm font-medium">{tool.wants}</span>
-          </motion.button>
-
-          {/* Ensure bookmark button is always rendered with proper styling */}
-          <motion.button
-            className={`flex items-center px-3 py-1.5 rounded-full ${
-              tool.bookmarked ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
-            } hover:bg-opacity-90 transition-colors`}
-            onClick={handleBookmark}
-            whileTap={{ scale: 0.98 }}
-            whileHover={{ scale: 1.05 }}
-          >
-            <Bookmark size={14} className="mr-1" fill={tool.bookmarked ? "currentColor" : "none"} />
-            <span className="text-sm font-medium">{tool.bookmarked ? 'Saved' : 'Save'}</span>
           </motion.button>
         </div>
       </div>

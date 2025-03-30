@@ -53,7 +53,7 @@ const toolController = {
         website,
         logo,
         tags: tags || [],
-        user: req.user._id,
+        creator: req.user._id, // Change from 'user' to 'creator' to match the schema
       });
   
       await newTool.save();
@@ -419,6 +419,31 @@ const toolController = {
     } catch (error) {
       console.error('Error in addComment:', error);
       res.status(500).json({ message: 'Server error while adding comment' });
+    }
+  },
+
+  // Get all tools created by the currently logged in user
+  getUserTools: async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      // Ensure the user is authenticated
+      if (!req.user || !req.user._id) {
+        res.status(401).json({ message: 'Authentication required' });
+        return;
+      }
+  
+      // Find all tools created by this user
+      const tools = await Tool.find({ creator: req.user._id })
+        .sort({ createdAt: -1 })
+        .populate('creator', 'name username email');
+  
+      res.status(200).json({ 
+        success: true,
+        count: tools.length,
+        tools 
+      });
+    } catch (error) {
+      console.error('Error fetching user tools:', error);
+      res.status(500).json({ message: 'Server error while fetching user tools' });
     }
   }
 };

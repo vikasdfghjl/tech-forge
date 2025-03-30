@@ -34,5 +34,8 @@ router.get('/:id/interaction-status', protect, (req, res) => {
 // Add a route for adding comments
 router.post('/:id/comments', protect, toolController.addComment);
 
+// Get tools created by the current user
+router.get('/user/me', protect, toolController.getUserTools);
+
 export default router;
 

@@ -25,11 +25,14 @@ export interface Comment {
   _id?: string; // Add optional _id field to handle API responses
 }
 
+// Update the NewTool type to match our CreateToolPayload
 type NewTool = {
   name: string;
   description: string;
-  creator?: string;
-  timestamp?: number;
+  category?: string;
+  website?: string;
+  logo?: string;
+  tags?: string[];
 };
 
 export function useToolData() {
@@ -65,10 +68,7 @@ export function useToolData() {
     }
 
     try {
-      const createdTool = await apiService.createTool({
-        name: newTool.name,
-        description: newTool.description,
-      });
+      const createdTool = await apiService.createTool(newTool);
       
       setTools(prev => [createdTool, ...prev]);
       toast.success("Tool added successfully");
@@ -202,7 +202,7 @@ export function useToolData() {
     }
   };
 
-  // New function to handle bookmarking
+  // New function to handle bookmarking with improved UI feedback
   const bookmarkTool = async (id: string) => {
     if (!isAuthenticated) {
       toast.error("You must be logged in to bookmark tools");
@@ -210,9 +210,21 @@ export function useToolData() {
     }
 
     try {
+      // Optimistic update for immediate UI feedback
+      setTools(prevTools => 
+        prevTools.map(tool => 
+          tool._id === id
+            ? { ...tool, bookmarked: !tool.bookmarked } 
+            : tool
+        )
+      );
+      
+      // Show loading toast
+      toast.loading("Updating bookmark...");
+      
       const response = await apiService.bookmarkTool(id);
       
-      // Update the local state based on the response
+      // Finalize the state update with the server response
       setTools(prevTools => 
         prevTools.map(tool => 
           tool._id === id
@@ -221,9 +233,22 @@ export function useToolData() {
         )
       );
       
+      toast.dismiss();
+      toast.success(response.bookmarked ? "Added to bookmarks" : "Removed from bookmarks");
       return response;
     } catch (error) {
+      // Revert optimistic update on error
+      setTools(prevTools => 
+        prevTools.map(tool => 
+          tool._id === id
+            ? { ...tool, bookmarked: !tool.bookmarked } 
+            : tool
+        )
+      );
+      
+      toast.dismiss();
       console.error('Error bookmarking tool:', error);
+      toast.error("Failed to update bookmark");
       throw error;
     }
   };
@@ -243,16 +268,45 @@ export function useToolData() {
     }
   };
   
-    return {
-      tools,
-      isLoading,
-      error,
-      addTool,
-      upvoteTool,
-      wantTool,
-      deleteTool,
-      addComment,
-      bookmarkTool, // Add new bookmark function
-      getBookmarkedTools, // Add function to get bookmarked tools
-    };
-  }
+  // Function to get tools posted by the current user
+  const getPostedTools = async () => {
+    if (!isAuthenticated) {
+      toast.error("You must be logged in to view your posted tools");
+      throw new Error("Authentication required");
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/tools/user/me`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.tools || [];
+    } catch (error) {
+      console.error('Error fetching posted tools:', error);
+      throw error;
+    }
+  };
+
+  return {
+    tools,
+    isLoading,
+    error,
+    addTool,
+    upvoteTool,
+    wantTool,
+    deleteTool,
+    addComment,
+    bookmarkTool, // Add new bookmark function
+    getBookmarkedTools, // Add function to get bookmarked tools
+    getPostedTools, // Add the new function to the return object
+  };
+}

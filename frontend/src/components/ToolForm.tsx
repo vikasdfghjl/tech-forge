@@ -7,7 +7,7 @@ import { Textarea } from "./ui/textarea";
 import { Input } from "./ui/input";
 
 type ToolFormProps = {
-  onSubmit: (name: string, description: string) => void;
+  onSubmit: (name: string, description: string, userId: string, authorName: string) => void;
   isSubmitting: boolean;
 };
 
@@ -15,12 +15,12 @@ const ToolForm = ({ onSubmit, isSubmitting }: ToolFormProps) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim() && description.trim()) {
-      onSubmit(name, description);
+    if (name.trim() && description.trim() && user) {
+      onSubmit(name, description, user._id, user.name);
       setName("");
       setDescription("");
     }

@@ -44,6 +44,10 @@ const Navbar = ({ isDarkMode, toggleTheme }: NavbarProps) => {
     navigate("/profile");
   };
 
+  const handleSubmit = () => {
+    navigate("/submit");
+  };
+
   return (
     <nav className="w-full py-4 px-6 flex items-center justify-between border-b border-border/30 backdrop-blur-sm bg-background/90 sticky top-0 z-40">
       <div className="flex-1 flex items-center">
@@ -54,6 +58,15 @@ const Navbar = ({ isDarkMode, toggleTheme }: NavbarProps) => {
           className="text-lg font-semibold subtle-text-gradient"
         >
           Tech Forge
+        </Button>
+        
+        {/* Add Submit Tool button */}
+        <Button 
+          variant="outline" 
+          onClick={handleSubmit} 
+          className="ml-4"
+        >
+          Submit Tool
         </Button>
       </div>
       
