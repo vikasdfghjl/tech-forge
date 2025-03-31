@@ -7,6 +7,15 @@ import User from '../models/User';
 import Tool from '../models/Tool';
 import mongoose from 'mongoose';
 
+// Extend Express Request interface
+declare global {
+  namespace Express {
+    interface Request {
+      user?: any;
+    }
+  }
+}
+
 const router = express.Router();
 
 // Apply checkAuth to each route individually instead of using router.use

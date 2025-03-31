@@ -82,24 +82,37 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setError(null);
     
     try {
+      console.log('Attempting login with:', { identifier, password: '****' });
+      
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        credentials: 'include', // Important for cookies
         body: JSON.stringify({ identifier, password }),
       });
       
+      console.log('Login response status:', response.status);
+      
+      const data = await response.json();
+      console.log('Login response data:', data);
+      
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.message || 'Login failed');
       }
       
-      const data = await response.json();
+      // Store user data
       setUser(data.user);
-      localStorage.setItem('token', data.token);
+      
+      // If there's a token in the response, store it for backup authentication
+      if (data.token) {
+        localStorage.setItem('auth_token', data.token);
+      }
+      
+      return data;
     } catch (err: unknown) {
+      console.error('Login error details:', err);
       const errorMessage = err instanceof Error ? err.message : 'Login failed';
       setError(errorMessage);
       throw err;

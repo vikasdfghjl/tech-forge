@@ -45,6 +45,7 @@ const LoginPage = () => {
     setLocalError("");
     
     try {
+      // Pass identifier as expected by the backend
       await login(identifier, password);
       toast.success("Login successful!");
       // Navigate is handled by the isAuthenticated effect above

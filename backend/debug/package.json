@@ -1,0 +1,15 @@
+{
+  "name": "tech-forge-debug-tools",
+  "version": "1.0.0",
+  "description": "Debug tools for Tech Forge",
+  "type": "module",
+  "scripts": {
+    "debug-auth": "node debug-auth.js",
+    "debug-auth-check": "node debug-auth-check.js",
+    "debug-upvote": "node debug-upvote.js"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.0",
+    "readline": "^1.3.0"
+  }
+}

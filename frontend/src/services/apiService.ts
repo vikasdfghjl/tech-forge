@@ -1,7 +1,8 @@
 import { Tool } from "../hooks/useToolData";
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Use a consistent approach for API base URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Define interfaces for proper typing
 interface ApiErrorResponse {
@@ -27,8 +28,34 @@ function isApiError(error: unknown): error is ApiErrorObject {
   );
 }
 
-// API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// Add response type definitions for better type safety
+interface UpvoteResponse {
+  success: boolean;
+  upvotes: number;
+  userUpvoted: boolean;
+  message?: string;
+}
+
+interface WantResponse {
+  success: boolean;
+  wants: number;
+  userWanted: boolean;
+  message?: string;
+}
+
+interface BookmarkResponse {
+  success: boolean;
+  bookmarked: boolean;
+  message: string;
+}
+
+interface CommentResponse {
+  id: string;
+  text: string;
+  author: string | { _id: string; name: string; username: string };
+  timestamp: number;
+  _id?: string;
+}
 
 // Default fetch options with credentials
 const defaultOptions = {
@@ -39,18 +66,40 @@ const defaultOptions = {
 };
 
 // Helper function for fetch requests
-async function fetchApi(endpoint: string, options = {}) {
+async function fetchApi<T = unknown>(endpoint: string, options = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  const response = await fetch(url, { ...defaultOptions, ...options });
   
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({
-      message: response.statusText,
-    }));
-    throw new Error(error.message || 'Something went wrong');
+  try {
+    console.log(`Making API request to: ${url}`, options);
+    
+    const response = await fetch(url, { 
+      ...defaultOptions, 
+      ...options,
+      credentials: 'include' // Ensure this is always included
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        message: response.statusText,
+      }));
+      
+      console.error(`API error (${response.status}):`, errorData);
+      
+      // Special handling for unauthorized errors
+      if (response.status === 401) {
+        console.warn("Authentication error. You might need to log in again.");
+        // Could dispatch an authentication event here
+        window.dispatchEvent(new CustomEvent('auth:required'));
+      }
+      
+      throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+    
+    return response.json() as Promise<T>;
+  } catch (error) {
+    console.error("API request failed:", error);
+    throw error;
   }
-  
-  return response.json();
 }
 
 // Fetch all tools
@@ -76,54 +125,92 @@ export const createTool = async (toolData: CreateToolPayload) => {
   });
 };
 
-// Get tools created by the current user
-export const getPostedTools = async () => {
-  const response = await fetchApi('/api/tools/user/me');
-  return response.tools || [];
-};
+// Define interface for the posted tools response
+interface PostedToolsResponse {
+  tools: Tool[];
+}
 
+// Define interface for the bookmarked tools response
+interface BookmarkedToolsResponse {
+  bookmarkedTools: Tool[];
+}
+
+// Get tools created by the current user
 // Get tools bookmarked by the current user
 export const getBookmarkedTools = async () => {
-  const response = await fetchApi('/api/interactions/bookmarks');
+  const response = await fetchApi<BookmarkedToolsResponse>('/api/interactions/bookmarks');
   return response.bookmarkedTools || [];
 };
 
-// Upvote a tool
-export const upvoteTool = async (toolId: string) => {
-  return fetchApi(`/api/tools/${toolId}/upvote`, {
+// Upvote a tool with proper typing
+export const upvoteTool = async (toolId: string): Promise<UpvoteResponse> => {
+  console.log(`Sending upvote request for tool ${toolId}`);
+  return fetchApi<UpvoteResponse>(`/api/interactions/upvote`, {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ 
+      itemId: toolId
+    }),
   });
 };
 
-// Want a tool
-export const wantTool = async (toolId: string) => {
-  return fetchApi(`/api/tools/${toolId}/want`, {
+// Want a tool with proper typing
+export const wantTool = async (toolId: string): Promise<WantResponse> => {
+  console.log(`Sending want request for tool ${toolId}`);
+  return fetchApi<WantResponse>(`/api/interactions/want`, {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ 
+      itemId: toolId
+    }),
   });
 };
 
 // Delete a tool
-export const deleteTool = async (toolId: string) => {
+export const deleteTool = async (toolId: string): Promise<{ success: boolean; message: string }> => {
   return fetchApi(`/api/tools/${toolId}`, {
     method: 'DELETE',
   });
 };
 
-// Add a comment to a tool
-export const addComment = async (toolId: string, text: string) => {
-  return fetchApi(`/api/tools/${toolId}/comments`, {
+// Add a comment to a tool with proper typing
+export const addComment = async (toolId: string, text: string): Promise<CommentResponse> => {
+  return fetchApi<CommentResponse>(`/api/tools/${toolId}/comments`, {
     method: 'POST',
     body: JSON.stringify({ text }),
   });
 };
 
-// Bookmark a tool
-export const bookmarkTool = async (toolId: string) => {
-  return fetchApi(`/api/interactions/bookmark/${toolId}`, {
+// Bookmark a tool with proper typing
+export const bookmarkTool = async (toolId: string): Promise<BookmarkResponse> => {
+  return fetchApi<BookmarkResponse>(`/api/interactions/bookmark/${toolId}`, {
     method: 'POST',
   });
 };
 
+// Define user interface
+interface User {
+  _id: string;
+  name: string;
+  username: string;
+  email: string;
+}
+
+// Add utility function for checking if user is authenticated
+export const checkAuthStatus = async (): Promise<{ isAuthenticated: boolean; user?: User }> => {
+  try {
+    const response = await fetchApi<{ isAuthenticated: boolean; user?: User }>('/api/auth/status');
+    return response;
+  } catch (error) {
+    return { isAuthenticated: false };
+  }
+};
+
+// Improve error handling
 function handleApiError(error: unknown): never {
   if (isApiError(error)) {
     // Now TypeScript knows the shape of the error object

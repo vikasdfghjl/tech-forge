@@ -3,6 +3,9 @@ import { ThumbsUp, Briefcase, Clock, Bookmark } from "lucide-react"; // Added Bo
 import { Tool } from "../hooks/useToolData";
 import ToolComments from "./ToolComments";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext"; // Adjust the path as needed
+import { useState } from "react";
 
 type ToolCardProps = {
   tool: Tool & { id?: string; _id?: string; bookmarked?: boolean }; // Added bookmarked property
@@ -13,10 +16,18 @@ type ToolCardProps = {
   onUpdate: (updatedData: Partial<Tool>) => void;
   onBookmark?: (id: string) => void; // Made optional
   index: number;
-};
+}
 
 const ToolCard = ({ tool, onUpvote, onWant, onAddComment, onDelete, onUpdate, onBookmark = () => {}, index }: ToolCardProps) => {
   console.log("Tool object:", tool); // Debug log to inspect the tool object
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  
+  // Add state variables for upvotes and upvote status
+  const [upvoteCount, setUpvoteCount] = useState(tool.upvotes || 0);
+  const [userUpvoted, setUserUpvoted] = useState(false);
+  const [isUpvoting, setIsUpvoting] = useState(false);
+  
   // Format timestamp to relative time (e.g., "2 days ago")
   const formatDate = (timestamp: number) => {
     const now = Date.now();
@@ -29,19 +40,41 @@ const ToolCard = ({ tool, onUpvote, onWant, onAddComment, onDelete, onUpdate, on
     if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
     if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
     if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-    return 'Just now';
+    return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
   };
-
+  
   // Make sure the upvote handler is passing the correct ID
-  const handleUpvote = () => {
-    const toolId = tool._id || tool.id;
-    if (!toolId) {
-      console.error("Tool ID is missing!");
-      toast.error("Cannot upvote: Tool ID is missing");
-      return;
+  const handleUpvote = async () => {
+    try {
+      if (!isAuthenticated) {
+        // Redirect to login or show login modal
+        toast.error("Please log in to upvote tools");
+        navigate("/login");
+        return;
+      }
+      
+      const toolId = tool._id || tool.id;
+      if (!toolId) {
+        console.error("Tool ID is missing!");
+        toast.error("Cannot upvote: Tool ID is missing");
+        return;
+      }
+      
+      setIsUpvoting(true);
+      await onUpvote(toolId);
+      
+      // Since onUpvote doesn't return a value, just update the local state
+      setUpvoteCount(prevCount => prevCount + 1);
+      setUserUpvoted(true);
+    } catch (error) {
+      console.error("Upvote error:", error);
+      // Check if it's an auth error and handle accordingly
+      if (error instanceof Error && error.message.includes("Authentication required")) {
+        navigate("/login");
+      }
+    } finally {
+      setIsUpvoting(false);
     }
-    console.log("Upvoting tool with ID:", toolId);
-    onUpvote(toolId);
   };
 
   // Also update the want handler
@@ -155,7 +188,7 @@ const ToolCard = ({ tool, onUpvote, onWant, onAddComment, onDelete, onUpdate, on
       
       <div className="flex justify-between items-center">
         <div className="text-xs text-muted-foreground">
-          by <span className="font-medium">{tool.creator}</span>
+          by <span className="font-medium">{typeof tool.creator === 'object' ? tool.creator.username || tool.creator.name : tool.creator}</span>
         </div>
         
         <div className="flex items-center space-x-2" style={{minHeight: '40px'}}>
@@ -184,10 +217,11 @@ const ToolCard = ({ tool, onUpvote, onWant, onAddComment, onDelete, onUpdate, on
       <ToolComments 
         toolId={tool._id || tool.id || ""}
         comments={tool.comments || []} 
-        onAddComment={handleAddComment} 
+        onAddComment={handleAddComment}
       />
     </motion.div>
   );
 };
 
 export default ToolCard;
+

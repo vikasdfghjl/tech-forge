@@ -207,27 +207,38 @@ const toolController = {
   upvoteTool: async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const toolId = req.params.id;
+      console.log(`[UPVOTE DEBUG] Processing upvote request for tool: ${toolId}`);
+      console.log(`[UPVOTE DEBUG] User authentication:`, {
+        isAuthenticated: !!req.user,
+        userId: req.user?._id,
+        cookies: req.cookies
+      });
 
       // Validate MongoDB ID
       if (!mongoose.Types.ObjectId.isValid(toolId)) {
+        console.log('[UPVOTE DEBUG] Invalid tool ID');
         res.status(400).json({ message: 'Invalid tool ID' });
         return;
       }
 
       // Check if user is authenticated
       if (!req.user || !req.user._id) {
+        console.log('[UPVOTE DEBUG] User not authenticated');
         res.status(401).json({ message: 'You must be logged in to upvote tools' });
         return;
       }
 
+      console.log(`[UPVOTE DEBUG] Finding tool with ID: ${toolId}`);
       const tool = await Tool.findById(toolId);
 
       if (!tool) {
+        console.log('[UPVOTE DEBUG] Tool not found');
         res.status(404).json({ message: 'Tool not found' });
         return;
       }
 
       // Check if user has already upvoted
+      console.log(`[UPVOTE DEBUG] Checking if user ${req.user._id} has already upvoted`);
       const existingInteraction = await Interaction.findOne({
         user: req.user._id,
         itemId: toolId,
@@ -235,6 +246,8 @@ const toolController = {
         interactionType: 'upvote'
       });
 
+      console.log(`[UPVOTE DEBUG] Existing interaction:`, existingInteraction ? 'Found' : 'Not found');
+      
       let userUpvoted = false;
 
       if (existingInteraction) {
@@ -242,6 +255,7 @@ const toolController = {
         existingInteraction.active = !existingInteraction.active;
         await existingInteraction.save();
         userUpvoted = existingInteraction.active;
+        console.log(`[UPVOTE DEBUG] Toggled upvote to: ${userUpvoted ? 'active' : 'inactive'}`);
       } else {
         // Create new upvote interaction
         await Interaction.create({
@@ -252,6 +266,7 @@ const toolController = {
           active: true
         });
         userUpvoted = true;
+        console.log(`[UPVOTE DEBUG] Created new upvote (active)`);
       }
 
       // Count active upvotes
@@ -261,17 +276,19 @@ const toolController = {
         interactionType: 'upvote',
         active: true
       });
+      console.log(`[UPVOTE DEBUG] New upvote count: ${upvoteCount}`);
 
       // Update the actual tool document with the new upvote count
       await Tool.findByIdAndUpdate(toolId, { upvotes: upvoteCount });
 
+      console.log(`[UPVOTE DEBUG] Sending response: upvotes=${upvoteCount}, userUpvoted=${userUpvoted}`);
       res.status(200).json({ 
         success: true, 
         upvotes: upvoteCount,
         userUpvoted 
       });
     } catch (error) {
-      console.error('Upvote error:', error);
+      console.error('[UPVOTE ERROR]', error);
       res.status(500).json({ message: 'Server error while processing upvote' });
     }
   },

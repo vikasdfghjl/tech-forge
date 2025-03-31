@@ -11,6 +11,7 @@ router.post('/login', login);
 // Add a logout route
 router.post('/logout', (req, res) => {
   res.clearCookie('token');
+  res.clearCookie('authToken');
   res.status(200).json({ success: true, message: 'Logged out successfully' });
 });
 

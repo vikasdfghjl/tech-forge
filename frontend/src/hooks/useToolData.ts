@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
-import * as apiService from "../services/apiService";
+import apiService from '../utils/apiService';
 
 export interface Tool {
   _id: string;
@@ -46,16 +46,50 @@ export function useToolData() {
   const { isAuthenticated } = useAuth();
 
   const fetchTools = async () => {
-    setIsLoading(true);
     try {
-      const toolsData = await apiService.fetchTools();
+      setIsLoading(true);
+      
+      // Add better error handling and logging
+      const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/tools`;
+      console.log("Fetching tools from:", apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include credentials if your API requires authentication
+      });
+
+      // Log response details for debugging
+      console.log("Response status:", response.status);
+      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+
+      // First check if response is ok before parsing JSON
+      if (!response.ok) {
+        // Try to get response text for better error messaging
+        const errorText = await response.text();
+        console.error("API Error Response:", errorText.substring(0, 200) + "...");
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+      
+      // Now parse JSON after confirming it's a successful response
+      const data = await response.json();
+      
+      // Add logging to inspect the response data structure
+      console.log("API Response structure:", Object.keys(data));
+      
+      // Transform the data if needed, with better handling of response structure
+      const toolsData = Array.isArray(data) ? data : data.tools || [];
+      console.log(`Received ${toolsData.length} tools`);
+      
       setTools(toolsData);
-      setError(null);
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to load tools";
-      console.error("Error fetching tools:", err);
-      setError(errorMessage);
-      toast.error("Failed to load tools");
+      return toolsData;
+    } catch (error) {
+      console.error("Error fetching tools:", error);
+      setError(error instanceof Error ? error.message : "Failed to fetch tools");
+      return [];
     } finally {
       setIsLoading(false);
     }
@@ -72,7 +106,7 @@ export function useToolData() {
     }
 
     try {
-      const createdTool = await apiService.createTool(newTool);
+      const createdTool = await apiService.post('/tools', newTool);
       
       setTools(prev => [createdTool, ...prev]);
       toast.success("Tool added successfully");
@@ -82,38 +116,29 @@ export function useToolData() {
     }
   };
 
-  const upvoteTool = async (id: string) => {
+  const upvoteTool = async (toolId: string): Promise<{ upvotes: number; userUpvoted: boolean }> => {
     if (!isAuthenticated) {
       toast.error("You must be logged in to upvote");
-      return;
+      throw new Error("Authentication required");
     }
 
     try {
-      console.log(`Upvoting tool with ID: ${id}`);
-      // Show visual feedback immediately
-      toast.loading("Processing upvote...");
+      const data = await apiService.upvoteTool(toolId);
       
-      const result = await apiService.upvoteTool(id);
-      console.log("Upvote result:", result);
-      
-      // Update local state with the server response
-      setTools(prev => 
-        prev.map(tool => {
-          if (tool._id === id) {
-            console.log(`Updating tool ${tool._id}: upvotes from ${tool.upvotes} to ${result.upvotes}`);
-            return { ...tool, upvotes: result.upvotes };
-          }
-          return tool;
-        })
-      );
-      
-      toast.dismiss();
-      toast.success(result.userUpvoted ? "Upvoted!" : "Upvote removed!");
-      
-    } catch (err: unknown) {
-      toast.dismiss();
-      console.error("Error upvoting tool:", err);
-      toast.error(err instanceof Error ? err.message : "Failed to upvote tool");
+      // Show success message
+      if (data.userUpvoted) {
+        toast.success("Tool upvoted!");
+      } else {
+        toast.success("Upvote removed");
+      }
+
+      return {
+        upvotes: data.upvotes || 0,
+        userUpvoted: data.userUpvoted || false
+      };
+    } catch (error) {
+      console.error('Error upvoting tool:', error);
+      throw error;
     }
   };
 
@@ -159,7 +184,9 @@ export function useToolData() {
     }
 
     try {
-      await apiService.deleteTool(id);
+      await apiService.request(`/tools/${id}`, {
+        method: 'DELETE',
+      });
       setTools(prev => prev.filter(tool => tool._id !== id));
     } catch (err: unknown) {
       console.error("Error deleting tool:", err);
@@ -175,7 +202,7 @@ export function useToolData() {
 
     try {
       console.log("Adding comment to tool:", toolId, commentText);
-      const newComment = await apiService.addComment(toolId, commentText);
+      const newComment = await apiService.post(`/tools/${toolId}/comments`, { text: commentText });
       
       // Update the local state with the new comment
       setTools(prev => 

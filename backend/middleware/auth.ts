@@ -17,18 +17,21 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
   }));
   console.log('[AUTH DEBUG] Cookies object:', req.cookies);
   
-  let token: string | undefined;
-
-  // Check for token in headers or cookies
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    console.log('[AUTH DEBUG] Found token in Authorization header');
-    token = req.headers.authorization.split(' ')[1];
-  } else if (req.cookies && req.cookies.token) {
-    console.log('[AUTH DEBUG] Found token in cookies');
-    token = req.cookies.token;
-  }
-
-  if (!token) {
+  // Check local storage token from request headers
+  const authHeader = req.headers.authorization;
+  const localStorageToken = authHeader && authHeader.startsWith('Bearer') 
+    ? authHeader.split(' ')[1] 
+    : null;
+    
+  // Check cookies for token
+  const cookieToken = req.cookies?.token || req.cookies?.authToken;
+  
+  // Use any available token
+  const token = localStorageToken || cookieToken;
+  
+  if (token) {
+    console.log('[AUTH DEBUG] Found token:', token.substring(0, 15) + '...');
+  } else {
     console.log('[AUTH DEBUG] No token found');
     res.status(401).json({ message: 'Not authorized, no token' });
     return;
@@ -36,6 +39,9 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 
   try {
     console.log('[AUTH DEBUG] Verifying token');
+    // Check which secret is being used
+    console.log('[AUTH DEBUG] JWT Secret (first 4 chars):', (JWT_SECRET || '').substring(0, 4) + '...');
+    
     // Verify token
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
     console.log('[AUTH DEBUG] Token valid, user ID:', decoded.id);
@@ -54,6 +60,9 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
     next();
   } catch (error) {
     console.error('[AUTH DEBUG] Authentication error:', error);
+    if (error instanceof jwt.JsonWebTokenError) {
+      console.log('[AUTH DEBUG] JWT Error type:', error.name);
+    }
     res.status(401).json({ message: 'Not authorized, token failed' });
   }
 };
