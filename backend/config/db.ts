@@ -11,13 +11,7 @@ const connectDB = async (): Promise<void> => {
     console.log('Connecting to MongoDB...');
     console.log('MongoDB URI:', MONGO_URI.replace(/\/\/([^:]+):([^@]+)@/, '//****:****@'));
     
-    const conn = await mongoose.connect(MONGO_URI, {
-      // These options are no longer needed in mongoose 6+
-      // useNewUrlParser: true,
-      // useUnifiedTopology: true,
-      // useCreateIndex: true,
-      // useFindAndModify: false
-    });
+    const conn = await mongoose.connect(MONGO_URI, {    });
 
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     
