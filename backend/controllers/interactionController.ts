@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import Interaction from '../models/Interaction';
 
+// Debug log for module loading
+console.log('Loading interactionController.ts');
+
 interface AuthRequest extends Request {
   user?: any;
   isAuthenticated?: boolean;
@@ -8,6 +11,11 @@ interface AuthRequest extends Request {
 
 // Toggle upvote status
 export const toggleUpvote = async (req: AuthRequest, res: Response) => {
+  console.log('toggleUpvote called with params:', { 
+    body: req.body,
+    user: req.user ? 'authenticated' : 'unauthenticated'
+  });
+  
   try {
     if (!req.isAuthenticated || !req.user) {
       return res.status(401).json({ 
@@ -62,7 +70,7 @@ export const toggleUpvote = async (req: AuthRequest, res: Response) => {
     }
   } catch (error) {
     console.error('Error in toggleUpvote:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error'
     });
@@ -71,6 +79,11 @@ export const toggleUpvote = async (req: AuthRequest, res: Response) => {
 
 // Toggle want status
 export const toggleWant = async (req: AuthRequest, res: Response) => {
+  console.log('toggleWant called with params:', { 
+    body: req.body,
+    user: req.user ? 'authenticated' : 'unauthenticated'
+  });
+  
   try {
     if (!req.isAuthenticated || !req.user) {
       return res.status(401).json({ 
@@ -125,7 +138,7 @@ export const toggleWant = async (req: AuthRequest, res: Response) => {
     }
   } catch (error) {
     console.error('Error in toggleWant:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error'
     });
@@ -134,6 +147,11 @@ export const toggleWant = async (req: AuthRequest, res: Response) => {
 
 // Get interaction status for an item
 export const getInteractionStatus = async (req: Request, res: Response) => {
+  console.log('getInteractionStatus called with params:', { 
+    query: req.query,
+    user: req.user ? 'authenticated' : 'unauthenticated'
+  });
+  
   try {
     if (!req.user) {
       return res.status(401).json({ message: 'User not authenticated' });
@@ -184,3 +202,10 @@ export const getInteractionStatus = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
+
+// Debug log for module exports
+console.log('interactionController exports:', {
+  toggleUpvote: typeof toggleUpvote,
+  toggleWant: typeof toggleWant,
+  getInteractionStatus: typeof getInteractionStatus
+});

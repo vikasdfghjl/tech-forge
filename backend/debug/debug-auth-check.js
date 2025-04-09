@@ -1,6 +1,6 @@
 /**
  * This file helps debug authentication issues
- * Run with: node debug-auth-check.js
+ * Run with: node debug/debug-auth-check.js
  */
 
 // Use async IIFE to support top-level await
@@ -81,7 +81,6 @@
           }
         });
       });
-      
     } catch (error) {
       console.error('Error:', error);
       rl.close();

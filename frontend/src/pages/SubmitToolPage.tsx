@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import ToolForm from '../components/Layout';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 const SubmitToolPage: React.FC = () => {
   const navigate = useNavigate();

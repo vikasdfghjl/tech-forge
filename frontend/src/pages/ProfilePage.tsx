@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { User, Bookmark, Wrench, ExternalLink } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth'; // Corrected import path
 import { useToolData, Tool } from '../hooks/useToolData';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner'; // Import toast for feedback

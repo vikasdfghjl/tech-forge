@@ -1,6 +1,6 @@
 /**
- * This file contains debugging tools for authentication issues
- * Run with: node debug-auth.js
+ * JWT token verification utility for debugging authentication
+ * Run with: node debug/debug-auth.js
  */
 
 const jwt = require('jsonwebtoken');
@@ -18,7 +18,7 @@ function decodeToken(token) {
     
     // Now try to verify
     console.log('\n==== TOKEN VERIFICATION ====');
-    const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-jwt-key';
+    const JWT_SECRET = process.env.JWT_SECRET || 'tech-forge-development-secret';
     console.log('Using JWT Secret (first 4 chars):', JWT_SECRET.substring(0, 4) + '...');
     
     const verified = jwt.verify(token, JWT_SECRET);
@@ -43,7 +43,8 @@ function decodeToken(token) {
   }
 }
 
-// Test token from your log
+// Example token for testing
+// Replace this with your own token for testing
 const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3ZTUxYjkzZTJjNjRkOTdhYTRhOTMwYiIsImlhdCI6MTc0MzA2ODA3OSwiZXhwIjoxNzQ1NjYwMDc5fQ.RF16e9FC-eIcWt1LoVkmoVPFULcXYQTyPZjfips9Ul8';
 
 console.log('===============================================');

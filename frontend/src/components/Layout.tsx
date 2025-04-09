@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Input } from "./ui/input";

@@ -1,56 +1,18 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import { User, AuthContextType } from "./AuthContextType";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  username: string; // Added username
-  role: string;
-  dateOfBirth?: Date | string; // Added dateOfBirth
-  gender?: string; // Added gender
-  country?: string; // Added country
-  bookmarkedTools?: string[]; // Added bookmarkedTools
-  upvotedTools?: string[]; // Added upvotedTools
-  wantedTools?: string[]; // Added wantedTools
-}
-
-interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
-  login: (identifier: string, password: string) => Promise<void>;
-  signup: (
-    name: string, 
-    email: string, 
-    password: string, 
-    username?: string, 
-    dateOfBirth?: string, 
-    gender?: string, 
-    country?: string
-  ) => Promise<void>;
-  logout: () => void;
-  clearError: () => void;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
-export const AuthProvider = ({ children }: AuthProviderProps) => {
+// Create the context with a default value
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,6 +27,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (response.ok) {
           const userData = await response.json();
           setUser(userData);
+          setIsAuthenticated(true);
         }
       } catch (err) {
         console.error("Auth check error:", err);
@@ -81,9 +44,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setIsLoading(true);
     setError(null);
     
-    try {
-      console.log('Attempting login with:', { identifier, password: '****' });
-      
+    try {      
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -93,26 +54,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         body: JSON.stringify({ identifier, password }),
       });
       
-      console.log('Login response status:', response.status);
-      
       const data = await response.json();
-      console.log('Login response data:', data);
       
       if (!response.ok) {
         throw new Error(data.message || 'Login failed');
       }
       
-      // Store user data
+      // Store user data in state
       setUser(data.user);
+      setIsAuthenticated(true);
       
-      // If there's a token in the response, store it for backup authentication
-      if (data.token) {
-        localStorage.setItem('auth_token', data.token);
-      }
+      // No need to store token in localStorage as we're using HTTP-only cookies
       
       return data;
     } catch (err: unknown) {
-      console.error('Login error details:', err);
       const errorMessage = err instanceof Error ? err.message : 'Login failed';
       setError(errorMessage);
       throw err;
@@ -151,13 +106,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }),
       });
       
+      const data = await response.json();
+      
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.message || 'Signup failed');
       }
       
-      const userData = await response.json();
-      setUser(userData);
+      setUser(data);
+      setIsAuthenticated(true);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Signup failed';
       setError(errorMessage);
@@ -177,6 +133,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.error("Logout error:", err);
     } finally {
       setUser(null);
+      setIsAuthenticated(false);
     }
   };
 
@@ -184,21 +141,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setError(null);
   };
 
-  const isAuthenticated = !!user;
+  const value = {
+    user,
+    isAuthenticated,
+    isLoading,
+    error,
+    login,
+    signup,
+    logout,
+    clearError,
+  };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated,
-        isLoading,
-        error,
-        login,
-        signup,
-        logout,
-        clearError,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

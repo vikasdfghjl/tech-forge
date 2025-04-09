@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { MessageSquare, Send } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import { Comment } from "../hooks/useToolData";
 import { toast } from "react-toastify"; // Add toast import
 

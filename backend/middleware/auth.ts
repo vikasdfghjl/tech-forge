@@ -2,101 +2,99 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/User';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-jwt-key';
+// Use environment variable for JWT secret with a secure fallback for development only
+const JWT_SECRET = process.env.JWT_SECRET || 'tech-forge-development-secret';
 
-// Extend the Request interface to include a user property
+// Extend the Request interface to include user property
 interface AuthRequest extends Request {
   user?: IUser;
+  isAuthenticated?: boolean;
+}
+
+// JWT payload interface
+interface DecodedToken {
+  id: string;
+  iat: number;
+  exp: number;
+  [key: string]: any;
 }
 
 // Authentication middleware - protects routes
-export const protect = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
-  console.log('[AUTH DEBUG] Headers:', JSON.stringify({
-    authorization: req.headers.authorization,
-    cookie: req.headers.cookie
-  }));
-  console.log('[AUTH DEBUG] Cookies object:', req.cookies);
-  
-  // Check local storage token from request headers
+export const protect = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void | Response> => {
+  // Check token in both Authorization header and cookies
   const authHeader = req.headers.authorization;
-  const localStorageToken = authHeader && authHeader.startsWith('Bearer') 
+  const headerToken = authHeader && authHeader.startsWith('Bearer') 
     ? authHeader.split(' ')[1] 
     : null;
     
-  // Check cookies for token
-  const cookieToken = req.cookies?.token || req.cookies?.authToken;
+  // Use consistent token name (only 'token')
+  const cookieToken = req.cookies?.token;
   
   // Use any available token
-  const token = localStorageToken || cookieToken;
+  const token = headerToken || cookieToken;
   
-  if (token) {
-    console.log('[AUTH DEBUG] Found token:', token.substring(0, 15) + '...');
-  } else {
-    console.log('[AUTH DEBUG] No token found');
-    res.status(401).json({ message: 'Not authorized, no token' });
-    return;
+  if (!token) {
+    return res.status(401).json({ message: 'Authentication required' });
   }
 
   try {
-    console.log('[AUTH DEBUG] Verifying token');
-    // Check which secret is being used
-    console.log('[AUTH DEBUG] JWT Secret (first 4 chars):', (JWT_SECRET || '').substring(0, 4) + '...');
-    
     // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
-    console.log('[AUTH DEBUG] Token valid, user ID:', decoded.id);
+    const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
     
     // Attach user to request
     const user = await User.findById(decoded.id).select('-password');
     
     if (!user) {
-      console.log('[AUTH DEBUG] User not found in database');
-      res.status(401).json({ message: 'User not found' });
-      return;
+      return res.status(401).json({ message: 'User not found' });
     }
     
-    console.log('[AUTH DEBUG] User authenticated:', user._id);
-    req.user = user.toObject() as IUser;
+    req.user = user;
+    req.isAuthenticated = true;
     next();
   } catch (error) {
-    console.error('[AUTH DEBUG] Authentication error:', error);
-    if (error instanceof jwt.JsonWebTokenError) {
-      console.log('[AUTH DEBUG] JWT Error type:', error.name);
-    }
-    res.status(401).json({ message: 'Not authorized, token failed' });
+    console.error('Authentication error:', error);
+    return res.status(401).json({ message: 'Authentication failed' });
+  }
+};
+
+// Admin authorization middleware
+export const admin = (req: AuthRequest, res: Response, next: NextFunction): void | Response => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    return res.status(403).json({ message: 'Not authorized as admin' });
   }
 };
 
 // Optional auth middleware - allows guest access but attaches user if authenticated
 export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
-  let token: string | undefined;
+  const authHeader = req.headers.authorization;
+  const headerToken = authHeader && authHeader.startsWith('Bearer') 
+    ? authHeader.split(' ')[1] 
+    : null;
+    
+  // Use consistent token name
+  const cookieToken = req.cookies?.token;
   
-  console.log('[DEBUG OPTIONAL AUTH] Checking optional auth');
-
-  // Check for token in headers or cookies
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
-  } else if (req.cookies && req.cookies.token) {
-    token = req.cookies.token;
-  }
+  // Use any available token
+  const token = headerToken || cookieToken;
 
   if (!token) {
-    console.log('[DEBUG OPTIONAL AUTH] No token found, continuing as guest');
     next();
     return;
   }
 
   try {
     // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
     
     // Attach user to request
     const user = await User.findById(decoded.id).select('-password');
-    req.user = user ? user.toObject() as IUser : undefined;
-    console.log('[DEBUG OPTIONAL AUTH] User authenticated:', req.user?._id);
+    req.user = user || undefined;
+    req.isAuthenticated = !!user;
     next();
   } catch (error) {
-    console.log('[DEBUG OPTIONAL AUTH] Invalid token, continuing as guest');
+    // Continue as guest if token is invalid
     next();
   }
 };

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "./useAuth";
 import apiService from '../utils/apiService';
 
 export interface Tool {

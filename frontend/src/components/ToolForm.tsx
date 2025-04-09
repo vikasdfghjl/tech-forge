@@ -1,28 +1,38 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 
 type ToolFormProps = {
   onSubmit: (name: string, description: string, userId: string, authorName: string) => void;
   isSubmitting: boolean;
+  onCancel?: () => void; 
 };
 
-const ToolForm = ({ onSubmit, isSubmitting }: ToolFormProps) => {
+const ToolForm = ({ onSubmit, isSubmitting, onCancel }: ToolFormProps) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
   const { isAuthenticated, user } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim() && description.trim() && user) {
-      onSubmit(name, description, user._id, user.name);
+      await onSubmit(name, description, user._id, user.name);
       setName("");
       setDescription("");
+    }
+  };
+
+  const handleCancel = () => {
+    if (onCancel) {
+      setName("");
+      setDescription("");
+      onCancel();
     }
   };
 
@@ -58,52 +68,62 @@ const ToolForm = ({ onSubmit, isSubmitting }: ToolFormProps) => {
           >
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium">
+                <Label htmlFor="name" className="text-sm font-medium">
                   Tool Name
-                </label>
+                </Label>
                 <Input
                   id="name"
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter tool name"
+                  placeholder="Enter a clear, descriptive name"
                   className="w-full"
                   required
+                  disabled={isSubmitting || !isAuthenticated}
                 />
               </div>
               
               <div className="space-y-2">
-                <label htmlFor="description" className="text-sm font-medium">
+                <Label htmlFor="description" className="text-sm font-medium">
                   Description
-                </label>
+                </Label>
                 <Textarea
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe what this tool would do"
-                  className="w-full h-[150px] overflow-y-auto"
-                  style={{ 
-                    overflowY: 'auto', 
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
-                  }}
+                  placeholder="Describe what problem this tool would solve and how it works"
+                  className="w-full min-h-[120px] resize-y"
                   required
+                  disabled={isSubmitting || !isAuthenticated}
                 />
               </div>
               
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={isSubmitting || !isAuthenticated}
-              >
-                {isSubmitting ? "Submitting..." : "Submit Tool Idea"}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              <div className="flex gap-2 pt-2">
+                {onCancel && (
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={handleCancel}
+                    className="flex-1"
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                )}
+                <Button 
+                  type="submit" 
+                  className="flex-1 gap-1.5"
+                  disabled={isSubmitting || !isAuthenticated || !name.trim() || !description.trim()}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit Idea"}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
               
               {!isAuthenticated && (
-                <p className="text-sm text-muted-foreground text-center mt-2">
+                <div className="p-3 text-sm bg-muted/50 text-muted-foreground rounded-lg text-center">
                   You need to be logged in to submit a tool idea
-                </p>
+                </div>
               )}
             </form>
           </motion.div>

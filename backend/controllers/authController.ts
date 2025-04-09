@@ -2,9 +2,9 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/User';
 
-// Set up JWT secret from environment or use a default (for development only)
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-jwt-key'; // Use environment variables in production
-console.log('JWT Secret:', JWT_SECRET);
+// Use environment variable for JWT secret with a secure fallback for development only
+const JWT_SECRET = process.env.JWT_SECRET || 'tech-forge-development-secret';
+
 // Generate JWT token
 const generateToken = (userId: string): string => {
   return jwt.sign({ id: userId }, JWT_SECRET, {
@@ -77,14 +77,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       sameSite: 'lax'
     });
-    
-    // For backward compatibility, also set authToken cookie
-    res.cookie('authToken', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      sameSite: 'lax'
-    });
 
     // Return user data without password and the token
     res.status(201).json({
@@ -107,69 +99,38 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 // Login user
 export const login = async (req: Request, res: Response): Promise<void | Response> => {
   try {
-    console.log('Login request received:', {
-      body: { ...req.body, password: '[REDACTED]' },
-      cookies: req.cookies,
-      headers: {
-        'content-type': req.headers['content-type'],
-        'authorization': req.headers.authorization ? 'Present' : 'Not present'
-      }
-    });
-
     const { identifier, password } = req.body as LoginRequest;
 
     if (!identifier || !password) {
-      console.log('Missing identifier or password');
       return res.status(400).json({ message: 'Email/username and password are required' });
     }
 
     // Find user by email or username
-    console.log(`Looking up user with identifier: ${identifier}`);
     const user = await User.findOne({ 
       $or: [{ email: identifier }, { username: identifier }]
     }).select('+password');
     
     if (!user) {
-      console.log(`No user found with identifier: ${identifier}`);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     
-    // Debug info about user (be careful not to log sensitive data)
-    console.log(`User found: ${user._id}, ${user.username}, ${user.email}`);
-    console.log(`Password hash present: ${!!user.password}`);
-    
     // Check if password matches
-    console.log('Checking password match...');
     const isMatch = await user.matchPassword(password);
-    console.log(`Password match result: ${isMatch}`);
     
     if (!isMatch) {
-      console.log('Password does not match');
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     
     // Generate JWT token using the common function
     const token = generateToken(user._id.toString());
-    console.log('Generated new token for user:', user._id);
     
     // Set cookie with the token
-    console.log('Setting token cookie');
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       sameSite: 'lax'
     });
-    
-    // For backward compatibility, also set authToken cookie
-    res.cookie('authToken', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      sameSite: 'lax'
-    });
-    
-    console.log('Login successful, sending response');
     
     // Return token and user data
     return res.status(200).json({
@@ -190,6 +151,12 @@ export const login = async (req: Request, res: Response): Promise<void | Respons
     console.error('Login error:', error);
     return res.status(500).json({ message: 'Server error' });
   }
+};
+
+// Logout user
+export const logout = (req: Request, res: Response): void => {
+  res.clearCookie('token');
+  res.status(200).json({ success: true, message: 'Logged out successfully' });
 };
 
 // Extended Request interface to include user property

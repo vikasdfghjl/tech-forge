@@ -4,7 +4,7 @@ import { Tool } from "../hooks/useToolData";
 import ToolComments from "./ToolComments";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext"; // Adjust the path as needed
+import { useAuth } from "../hooks/useAuth"; // Fixed import path
 import { useState } from "react";
 
 type ToolCardProps = {

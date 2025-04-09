@@ -1,117 +1,115 @@
-import { motion } from "framer-motion";
-import { Filter, ArrowDownAZ, ArrowUpAZ, ThumbsUp, Briefcase } from "lucide-react"; // Changed Star to Briefcase
-import { SortOption, FilterOption } from "../hooks/useToolData";
+import { useState } from "react";
+import { Check, ChevronDown, ArrowUpDown } from "lucide-react";
+import { 
+  DropdownMenu, 
+  DropdownMenuTrigger, 
+  DropdownMenuContent, 
+  DropdownMenuRadioGroup, 
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
+} from "./ui/dropdown-menu";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 
-type FilterSortProps = {
-  sortOption: SortOption;
-  onSortChange: (option: SortOption) => void;
-  filterOption: FilterOption;
-  onFilterChange: (option: FilterOption) => void;
+type FilterCriteria = {
+  sort: string;
+  category: string;
 };
 
-const FilterSort = ({ 
-  sortOption, 
-  onSortChange, 
-  filterOption, 
-  onFilterChange 
-}: FilterSortProps) => {
+interface FilterSortProps {
+  onChange: (criteria: FilterCriteria) => void;
+  currentFilters: FilterCriteria;
+}
+
+const FilterSort = ({ onChange, currentFilters }: FilterSortProps) => {
+  const categories = [
+    { label: "All Categories", value: "all" },
+    { label: "AI & Machine Learning", value: "ai-ml" },
+    { label: "Developer Tools", value: "dev-tools" },
+    { label: "Productivity", value: "productivity" },
+    { label: "Design Tools", value: "design" },
+    { label: "Automation", value: "automation" }
+  ];
+
+  const sortOptions = [
+    { label: "Newest First", value: "newest" },
+    { label: "Most Upvotes", value: "upvotes" },
+    { label: "Most Wanted", value: "wants" }
+  ];
+
+  const getSortLabel = (value: string) => {
+    return sortOptions.find(option => option.value === value)?.label || "Sort";
+  };
+
+  const getCategoryLabel = (value: string) => {
+    return categories.find(category => category.value === value)?.label || "All Categories";
+  };
+
   return (
-    <motion.div
-      className="w-full glass-card rounded-xl p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.1 }}
-    >
-      <div className="space-y-2 w-full sm:w-auto">
-        <div className="flex items-center space-x-2 text-sm font-medium text-muted-foreground">
-          <Filter size={14} />
-          <span>Filter by</span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => onFilterChange("all")}
-            className={`px-3 py-1.5 text-xs rounded-full transition-colors ${
-              filterOption === "all"
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-            }`}
+    <div className="flex flex-wrap items-center gap-2">
+      {/* Sort dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-8 gap-1">
+            <ArrowUpDown size={14} />
+            <span>{getSortLabel(currentFilters.sort)}</span>
+            <ChevronDown size={14} />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-48">
+          <DropdownMenuLabel>Sort By</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuRadioGroup 
+            value={currentFilters.sort}
+            onValueChange={(value) => onChange({...currentFilters, sort: value})}
           >
-            All Ideas
-          </button>
-          <button
-            onClick={() => onFilterChange("most-wanted")}
-            className={`px-3 py-1.5 text-xs rounded-full transition-colors ${
-              filterOption === "most-wanted"
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-            }`}
+            {sortOptions.map((option) => (
+              <DropdownMenuRadioItem key={option.value} value={option.value}>
+                {option.label}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Category dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-8 gap-1">
+            <span>Category</span>
+            <ChevronDown size={14} />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-48">
+          <DropdownMenuLabel>Filter Category</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuRadioGroup 
+            value={currentFilters.category}
+            onValueChange={(value) => onChange({...currentFilters, category: value})}
           >
-            Most Wanted
-          </button>
-          <button
-            onClick={() => onFilterChange("trending")}
-            className={`px-3 py-1.5 text-xs rounded-full transition-colors ${
-              filterOption === "trending"
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-            }`}
+            {categories.map((category) => (
+              <DropdownMenuRadioItem key={category.value} value={category.value}>
+                {category.label}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Show active filters */}
+      {currentFilters.category !== 'all' && (
+        <Badge variant="secondary" className="gap-1 h-7 px-2">
+          {getCategoryLabel(currentFilters.category)}
+          <button 
+            onClick={() => onChange({...currentFilters, category: 'all'})}
+            className="ml-1 hover:text-destructive transition-colors"
           >
-            Trending
+            ×
           </button>
-        </div>
-      </div>
-      
-      <div className="space-y-2 w-full sm:w-auto">
-        <div className="flex items-center space-x-2 text-sm font-medium text-muted-foreground">
-          <ArrowDownAZ size={14} />
-          <span>Sort by</span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => onSortChange("newest")}
-            className={`px-3 py-1.5 text-xs rounded-full transition-colors ${
-              sortOption === "newest"
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-            }`}
-          >
-            Newest
-          </button>
-          <button
-            onClick={() => onSortChange("oldest")}
-            className={`px-3 py-1.5 text-xs rounded-full transition-colors ${
-              sortOption === "oldest"
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-            }`}
-          >
-            Oldest
-          </button>
-          <button
-            onClick={() => onSortChange("most-upvotes")}
-            className={`px-3 py-1.5 text-xs rounded-full flex items-center space-x-1 transition-colors ${
-              sortOption === "most-upvotes"
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-            }`}
-          >
-            <ThumbsUp size={12} />
-            <span>Upvotes</span>
-          </button>
-          <button
-            onClick={() => onSortChange("most-wants")}
-            className={`px-3 py-1.5 text-xs rounded-full flex items-center space-x-1 transition-colors ${
-              sortOption === "most-wants"
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-            }`}
-          >
-            <Briefcase size={12} /> {/* Changed from Star to Briefcase */}
-            <span>Funds</span> {/* Optionally changed label from "Wants" to "Funds" */}
-          </button>
-        </div>
-      </div>
-    </motion.div>
+        </Badge>
+      )}
+    </div>
   );
 };
 

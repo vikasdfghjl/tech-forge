@@ -1,14 +1,14 @@
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
   
-  if (loading) {
+  if (isLoading) {
     return <div className="flex justify-center items-center h-[60vh]">Loading...</div>;
   }
   

@@ -1,11 +1,11 @@
 import express from 'express';
 import { toggleUpvote, toggleWant, getInteractionStatus } from '../controllers/interactionController';
-import { checkAuth } from '../middleware/authMiddleware';
-import { protect } from '../middleware/auth';
+import { protect, optionalAuth } from '../middleware/auth'; // Updated import to use auth.ts
 import { Request, Response } from "express";
 import User from '../models/User';
 import Tool from '../models/Tool';
 import mongoose from 'mongoose';
+import { debugRouteImports } from '../utils/expressDebug';
 
 // Extend Express Request interface
 declare global {
@@ -16,12 +16,30 @@ declare global {
   }
 }
 
+// Debug the imported controller functions
+debugRouteImports('InteractionRoutes', {
+  toggleUpvote,
+  toggleWant,
+  getInteractionStatus,
+  protect,
+  optionalAuth
+});
+
 const router = express.Router();
 
-// Apply checkAuth to each route individually instead of using router.use
-router.post('/upvote', checkAuth, toggleUpvote);
-router.post('/want', checkAuth, toggleWant);
-router.get('/status', checkAuth, getInteractionStatus);
+// Apply protect middleware to each route individually
+try {
+  console.log('Setting up /upvote route');
+  router.post('/upvote', protect, toggleUpvote);
+  
+  console.log('Setting up /want route');
+  router.post('/want', protect, toggleWant);
+  
+  console.log('Setting up /status route');
+  router.get('/status', protect, getInteractionStatus);
+} catch (error) {
+  console.error('Error setting up routes:', error);
+}
 
 // Toggle bookmark for a tool
 router.post('/bookmark/:id', protect, async (req: Request, res: Response) => {

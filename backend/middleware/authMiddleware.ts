@@ -1,3 +1,11 @@
+/**
+ * This file has been deprecated in favor of auth.ts
+ * All authentication middleware functions have been consolidated into auth.ts
+ * 
+ * This file is kept for reference only and should not be used in new code.
+ */
+
+/*
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/User';
@@ -152,3 +160,4 @@ export const authenticateUser = async (
         return res.status(401).json({ message: 'Authentication failed' });
     }
 };
+*/

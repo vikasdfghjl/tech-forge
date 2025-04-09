@@ -1,4 +1,4 @@
-import express, { Application } from "express";
+import express, { Application, Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -13,6 +13,27 @@ import connectDB from "./config/db";
 dotenv.config();
 
 const app: Application = express();
+
+// Global route error handler to catch and log errors during route registration
+const originalUse = app.use.bind(app);
+app.use = function(path: string | RegExp | express.RequestHandler, ...handlers: express.RequestHandler[]) {
+  console.log(`Registering route handler for ${typeof path === 'string' ? path : '/'}`);
+  
+  handlers.forEach((handler, index) => {
+    if (handler === undefined) {
+      console.error(`ERROR: Handler #${index} for path ${path} is undefined!`);
+      console.trace();
+      process.exit(1); // Exit with error to prevent starting with broken routes
+    }
+  });
+  
+  // Handle function overloads correctly
+  if (typeof path === 'function') {
+    return originalUse(path, ...handlers);
+  } else {
+    return originalUse(path as string | RegExp, ...handlers);
+  }
+} as typeof app.use;
 
 // Middleware
 app.use(cors({
@@ -32,12 +53,40 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
-app.use("/api/charts", chartRoutes);
-app.use("/api/tool-ideas", toolIdeasRouter);
-app.use("/api/tools", toolRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/interactions', interactionRoutes);
+// Enhanced error tracking for route registration
+console.log('==== REGISTERING ROUTES ====');
+
+try {
+  // Routes
+  console.log('Registering chart routes...');
+  app.use("/api/charts", chartRoutes);
+  
+  console.log('Registering tool ideas routes...');
+  app.use("/api/tool-ideas", toolIdeasRouter);
+  
+  console.log('Registering tool routes...');
+  app.use("/api/tools", toolRoutes);
+  
+  console.log('Registering auth routes...');
+  app.use('/api/auth', authRoutes);
+  
+  console.log('Registering interaction routes...');
+  app.use('/api/interactions', interactionRoutes);
+  
+  console.log('==== ALL ROUTES REGISTERED SUCCESSFULLY ====');
+} catch (error) {
+  console.error('ERROR REGISTERING ROUTES:', error);
+  process.exit(1);
+}
+
+// Error handler middleware
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
 
 // Connect to MongoDB
 connectDB().then(() => {
