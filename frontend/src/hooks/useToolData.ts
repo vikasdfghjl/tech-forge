@@ -176,6 +176,17 @@ export function useToolData() {
     try {
       const data = await apiService.upvoteTool(toolId);
       
+      // Update the local tools state with the new upvote count
+      setTools(prev => 
+        prev.map(tool => {
+          if (tool._id === toolId) {
+            console.log(`Updating tool ${tool._id}: upvotes from ${tool.upvotes} to ${data.upvotes}`);
+            return { ...tool, upvotes: data.upvotes };
+          }
+          return tool;
+        })
+      );
+      
       // Show success message
       if (data.userUpvoted) {
         toast.success("Tool upvoted!");
