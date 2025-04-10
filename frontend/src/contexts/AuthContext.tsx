@@ -19,21 +19,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Check for existing auth on load
   useEffect(() => {
     const checkAuth = async () => {
+      console.log('🔍 Checking authentication status...');
       try {
+        console.log(`🌐 Fetching auth status from: ${API_URL}/auth/me`);
         const response = await fetch(`${API_URL}/auth/me`, {
           credentials: 'include'
         });
         
+        console.log('📋 Auth check response status:', response.status);
+        console.log('📋 Auth check response headers:', 
+          Object.fromEntries(response.headers.entries()));
+        
         if (response.ok) {
           const userData = await response.json();
+          console.log('✅ Authentication successful, user data:', {
+            id: userData._id,
+            name: userData.name,
+            email: userData.email
+          });
           setUser(userData);
           setIsAuthenticated(true);
+        } else {
+          console.log('❌ Authentication check failed with status:', response.status);
+          // Try to get more details about the failure
+          try {
+            const errorData = await response.json();
+            console.log('❌ Auth error details:', errorData);
+          } catch (e) {
+            console.log('❌ Could not parse error response');
+          }
         }
       } catch (err) {
-        console.error("Auth check error:", err);
+        console.error("❌ Auth check error:", err);
         // Don't set error here, just silently fail
       } finally {
         setIsLoading(false);
+        console.log('🔍 Auth check completed, isAuthenticated:', isAuthenticated);
       }
     };
     
@@ -44,7 +65,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     setError(null);
     
-    try {      
+    try {
+      console.log(`🔐 Attempting login for: ${identifier}`);
+      console.log(`🌐 Login request URL: ${API_URL}/auth/login`);
+      
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -54,11 +78,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         body: JSON.stringify({ identifier, password }),
       });
       
+      console.log('📋 Login response status:', response.status);
+      console.log('📋 Login response headers:', Object.fromEntries(response.headers.entries()));
+      
       const data = await response.json();
       
       if (!response.ok) {
+        console.error('❌ Login failed:', data);
         throw new Error(data.message || 'Login failed');
       }
+      
+      console.log('✅ Login successful:', {
+        userId: data.user?._id,
+        name: data.user?.name,
+        hasToken: !!data.token
+      });
       
       // Store user data in state
       setUser(data.user);
@@ -69,6 +103,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return data;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed';
+      console.error('❌ Login error details:', err);
       setError(errorMessage);
       throw err;
     } finally {

@@ -41,7 +41,8 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
-  exposedHeaders: ['Set-Cookie']  // Make sure cookies can be read by the client
+  exposedHeaders: ['Set-Cookie'],  // Make sure cookies can be read by the client
+  maxAge: 86400 // Cache preflight requests for 24 hours
 }));
 app.use(cookieParser());  // Add cookie-parser before other middleware
 app.use(express.json());

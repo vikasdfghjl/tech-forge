@@ -1,16 +1,7 @@
 import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/User';
-
-// Use environment variable for JWT secret with a secure fallback for development only
-const JWT_SECRET = process.env.JWT_SECRET || 'tech-forge-development-secret';
-
-// Generate JWT token
-const generateToken = (userId: string): string => {
-  return jwt.sign({ id: userId }, JWT_SECRET, {
-    expiresIn: '30d' // Token expires in 30 days
-  });
-};
+import JWT_CONFIG from '../config/jwt_config';
+import { AuthRequest } from '../types/express';
 
 interface RegisterRequest {
   name: string;
@@ -67,16 +58,11 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     await user.save();
 
-    // Generate token
-    const token = generateToken(user._id.toString());
+    // Generate token using the centralized function
+    const token = JWT_CONFIG.generateToken(user._id.toString());
     
-    // Set cookie with consistent name across all auth endpoints
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      sameSite: 'lax'
-    });
+    // Set cookie using configuration from JWT_CONFIG
+    res.cookie(JWT_CONFIG.cookie.name, token, JWT_CONFIG.cookie.options);
 
     // Return user data without password and the token
     res.status(201).json({
@@ -121,16 +107,11 @@ export const login = async (req: Request, res: Response): Promise<void | Respons
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     
-    // Generate JWT token using the common function
-    const token = generateToken(user._id.toString());
+    // Generate JWT token using the centralized function
+    const token = JWT_CONFIG.generateToken(user._id.toString());
     
-    // Set cookie with the token
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      sameSite: 'lax'
-    });
+    // Set cookie with the token using our configuration
+    res.cookie(JWT_CONFIG.cookie.name, token, JWT_CONFIG.cookie.options);
     
     // Return token and user data
     return res.status(200).json({
@@ -155,14 +136,9 @@ export const login = async (req: Request, res: Response): Promise<void | Respons
 
 // Logout user
 export const logout = (req: Request, res: Response): void => {
-  res.clearCookie('token');
+  res.clearCookie(JWT_CONFIG.cookie.name);
   res.status(200).json({ success: true, message: 'Logged out successfully' });
 };
-
-// Extended Request interface to include user property
-interface AuthRequest extends Request {
-  user?: IUser;
-}
 
 // Get current user profile
 export const getUserProfile = async (req: AuthRequest, res: Response): Promise<void> => {

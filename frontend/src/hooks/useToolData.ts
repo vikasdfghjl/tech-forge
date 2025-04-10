@@ -100,19 +100,70 @@ export function useToolData() {
   }, []);
 
   const addTool = async (newTool: NewTool) => {
+    console.log('🔍 addTool called with data:', { ...newTool, description: `${newTool.description?.substring(0, 20)}...` });
+    console.log('🔐 Authentication status before API call:', { isAuthenticated });
+    
     if (!isAuthenticated) {
+      console.error('❌ Tool submission blocked - User not authenticated');
       toast.error("You must be logged in to add a tool");
       return;
     }
 
     try {
-      const createdTool = await apiService.post('/tools', newTool);
+      const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/tools`;
+      console.log(`🌐 Submitting tool to: ${apiUrl}`);
+      console.log('📤 Request headers include credentials:', { credentials: 'include' });
+      console.log('🍪 Cookie status:', document.cookie ? `Cookies present (${document.cookie.split(';').length} items)` : 'No cookies found');
+      
+      // Make the request with credentials to include cookies for authentication
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTool),
+        credentials: 'include', // Include cookies for authentication
+      });
+
+      console.log(`📥 Response status: ${response.status} (${response.statusText})`);
+      console.log('📥 Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        console.error(`❌ Failed API response: ${response.status} ${response.statusText}`);
+        
+        // Try to get the response body for better error details
+        try {
+          const errorData = await response.json();
+          console.error('❌ Error response data:', errorData);
+          throw new Error(errorData.message || `Error: ${response.status}`);
+        } catch (jsonError) {
+          // If we can't parse JSON, try to get text
+          const errorText = await response.text().catch(() => null);
+          console.error('❌ Error response text:', errorText);
+          throw new Error(`Error: ${response.status} - ${errorText || response.statusText}`);
+        }
+      }
+      
+      const createdTool = await response.json();
+      console.log('✅ Tool created successfully:', { id: createdTool._id, name: createdTool.name });
       
       setTools(prev => [createdTool, ...prev]);
       toast.success("Tool added successfully");
+      return createdTool;
     } catch (err: unknown) {
-      console.error("Error adding tool:", err);
-      toast.error(err instanceof Error ? err.message : "Failed to add tool");
+      console.error("❌ Error adding tool:", err);
+      // Check if it's an authentication error
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes('Authentication') || 
+          errorMessage.includes('authentication') ||
+          errorMessage.includes('unauthorized') || 
+          errorMessage.includes('401')) {
+        console.error('❌ Authentication failure detected');
+        toast.error("Authentication error. Please try logging in again.");
+      } else {
+        toast.error(errorMessage || "Failed to add tool");
+      }
+      throw err;
     }
   };
 

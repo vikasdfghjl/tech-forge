@@ -1,15 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import User, { IUser } from '../models/User';
-
-// Use environment variable for JWT secret with a secure fallback for development only
-const JWT_SECRET = process.env.JWT_SECRET || 'tech-forge-development-secret';
-
-// Extend the Request interface to include user property
-interface AuthRequest extends Request {
-  user?: IUser;
-  isAuthenticated?: boolean;
-}
+import User from '../models/User';
+import JWT_CONFIG from '../config/jwt_config';
+import { AuthRequest } from '../types/express';
 
 // JWT payload interface
 interface DecodedToken {
@@ -21,25 +14,25 @@ interface DecodedToken {
 
 // Authentication middleware - protects routes
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void | Response> => {
-  // Check token in both Authorization header and cookies
-  const authHeader = req.headers.authorization;
-  const headerToken = authHeader && authHeader.startsWith('Bearer') 
-    ? authHeader.split(' ')[1] 
-    : null;
-    
-  // Use consistent token name (only 'token')
-  const cookieToken = req.cookies?.token;
-  
-  // Use any available token
-  const token = headerToken || cookieToken;
-  
-  if (!token) {
-    return res.status(401).json({ message: 'Authentication required' });
-  }
-
   try {
-    // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
+    // Check token in both Authorization header and cookies
+    const authHeader = req.headers.authorization;
+    const headerToken = authHeader && authHeader.startsWith('Bearer') 
+      ? authHeader.split(' ')[1] 
+      : null;
+      
+    // Check for the token in cookies using our configured cookie name
+    const cookieToken = req.cookies?.[JWT_CONFIG.cookie.name];
+    
+    // Use any available token
+    const token = headerToken || cookieToken;
+    
+    if (!token) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    // Verify token using our centralized JWT secret
+    const decoded = jwt.verify(token, JWT_CONFIG.secret) as DecodedToken;
     
     // Attach user to request
     const user = await User.findById(decoded.id).select('-password');
@@ -73,8 +66,8 @@ export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFu
     ? authHeader.split(' ')[1] 
     : null;
     
-  // Use consistent token name
-  const cookieToken = req.cookies?.token;
+  // Check for the token in cookies using our configured cookie name
+  const cookieToken = req.cookies?.[JWT_CONFIG.cookie.name];
   
   // Use any available token
   const token = headerToken || cookieToken;
@@ -85,8 +78,8 @@ export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFu
   }
 
   try {
-    // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
+    // Verify token using our centralized JWT secret
+    const decoded = jwt.verify(token, JWT_CONFIG.secret) as DecodedToken;
     
     // Attach user to request
     const user = await User.findById(decoded.id).select('-password');

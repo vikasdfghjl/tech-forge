@@ -4,12 +4,7 @@ import Tool from "../models/Tool";
 import Interaction from "../models/Interaction";
 import { IUser } from '../models/User';
 import { IComment } from '../models/Tool';
-
-// Extended Request interface to include user property
-interface AuthRequest extends Request {
-  user?: IUser;
-  isAuthenticated?: boolean;
-}
+import { AuthRequest } from '../types/express';
 
 // Consolidate all controller functions into a single object
 const toolController = {

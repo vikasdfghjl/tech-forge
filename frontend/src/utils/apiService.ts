@@ -14,28 +14,58 @@ const apiService = {
   async request(endpoint: string, options: RequestInit = {}) {
     const url = `${API_URL}${endpoint}`;
     
-    // Get token from localStorage as fallback
-    const token = localStorage.getItem('auth_token');
-    
-    // Setup headers with auth token if available
+    // Setup headers with proper content type
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
     
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
     // Merge our options with the provided ones, ensuring credentials are included
     const fetchOptions: RequestInit = {
       ...options,
       headers,
-      credentials: 'include', // Always include cookies
+      credentials: 'include', // Always include cookies for authentication
     };
+    
+    console.log(`🌐 API Request: ${options.method || 'GET'} ${url}`);
+    console.log('📤 Request options:', {
+      method: fetchOptions.method,
+      headers: fetchOptions.headers,
+      credentials: fetchOptions.credentials,
+      bodyLength: fetchOptions.body ? JSON.stringify(fetchOptions.body).length : 0
+    });
+    
+    if (fetchOptions.body) {
+      try {
+        // Safely log request body with sensitive info masked
+        const bodyObj = JSON.parse(fetchOptions.body as string);
+        const sanitizedBody = { ...bodyObj };
+        
+        // Mask sensitive fields if they exist
+        if (sanitizedBody.password) sanitizedBody.password = '******';
+        if (sanitizedBody.token) sanitizedBody.token = '******';
+        
+        console.log('📤 Request body:', sanitizedBody);
+      } catch (e) {
+        console.log('📤 Request body: [Could not parse body]');
+      }
+    }
     
     try {
       const response = await fetch(url, fetchOptions);
+      
+      console.log(`📥 Response status: ${response.status} (${response.statusText})`);
+      console.log('📥 Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      // Clone the response to read it twice (once for logging, once for return)
+      const clonedResponse = response.clone();
+      
+      try {
+        const responseData = await clonedResponse.json();
+        console.log('📥 Response data:', responseData);
+      } catch (e) {
+        console.log('📥 Response data: [Not valid JSON]');
+      }
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -43,7 +73,8 @@ const apiService = {
         
         if (response.status === 401) {
           // Handle unauthorized specifically
-          console.error('Authentication error:', errorMessage);
+          console.error('❌ Authentication error:', errorMessage);
+          console.error('❌ Cookie status:', document.cookie ? 'Cookies present' : 'No cookies found');
         }
         
         throw new Error(errorMessage);
@@ -52,7 +83,7 @@ const apiService = {
       // Return successful response
       return await response.json();
     } catch (error) {
-      console.error(`API request error for ${endpoint}:`, error);
+      console.error(`❌ API request error for ${endpoint}:`, error);
       throw error;
     }
   },
