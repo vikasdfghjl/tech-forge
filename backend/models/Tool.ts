@@ -29,6 +29,7 @@ const CommentSchema: Schema = new Schema({
 export interface ITool extends Document {
   name: string;
   description: string;
+  category: string;
   creator: mongoose.Types.ObjectId;
   upvotes: number;
   wants: number;
@@ -47,6 +48,11 @@ const ToolSchema: Schema = new Schema({
   description: {
     type: String,
     required: true,
+    trim: true
+  },
+  category: {
+    type: String,
+    default: 'Other',
     trim: true
   },
   creator: {

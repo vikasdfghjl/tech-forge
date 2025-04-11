@@ -12,9 +12,16 @@ const toolController = {
   getTools: async (req: Request, res: Response): Promise<void> => {
     try {
       console.log("Fetching tools from database...");
-      const tools = await Tool.find();
+      
+      // Handle category filtering
+      const filter: any = {};
+      if (req.query.category) {
+        filter.category = req.query.category;
+      }
+      
+      const tools = await Tool.find(filter);
       console.log("Tools fetched:", tools);
-      res.status(200).send(tools);
+      res.status(200).json({ tools });
     } catch (error) {
       console.error("Error fetching tools:", error);
       res.status(500).send(error);
@@ -48,12 +55,20 @@ const toolController = {
         website,
         logo,
         tags: tags || [],
-        creator: req.user._id, // Change from 'user' to 'creator' to match the schema
+        creator: req.user._id,
       });
   
       await newTool.save();
       console.log('[DEBUG CREATE TOOL] Tool created successfully:', newTool._id);
-      res.status(201).json(newTool);
+      
+      // Create a response object with the tool data
+      // Add createdBy for backwards compatibility with tests
+      const toolResponse = {
+        ...newTool.toObject(),
+        createdBy: newTool.creator
+      };
+      
+      res.status(201).json({ tool: toolResponse });
     } catch (error) {
       console.error('[DEBUG CREATE TOOL] Error creating tool:', error);
       res.status(500).json({ message: 'Server error' });
@@ -61,18 +76,36 @@ const toolController = {
   },
 
   // Update a tool
-  updateTool: async (req: Request, res: Response): Promise<void> => {
+  updateTool: async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
-      const updatedTool = await Tool.findByIdAndUpdate(id, req.body, { new: true });
-      if (!updatedTool) {
-        res.status(404).send({ message: "Tool not found" });
+
+      // Check if user is authenticated
+      if (!req.user || !req.user._id) {
+        res.status(401).json({ message: 'Authentication required' });
         return;
       }
-      res.status(200).send(updatedTool);
+
+      // Find the tool first to check permissions
+      const tool = await Tool.findById(id);
+      
+      if (!tool) {
+        res.status(404).json({ message: "Tool not found" });
+        return;
+      }
+
+      // Check if the user is the creator of the tool
+      if (tool.creator && tool.creator.toString() !== req.user._id.toString()) {
+        res.status(403).json({ message: "Not authorized to update this tool" });
+        return;
+      }
+
+      // Proceed with the update
+      const updatedTool = await Tool.findByIdAndUpdate(id, req.body, { new: true });
+      res.status(200).json({ tool: updatedTool });
     } catch (error) {
       console.error("Error updating tool:", error);
-      res.status(500).send(error);
+      res.status(500).json({ message: "Server error" });
     }
   },
 
@@ -109,7 +142,7 @@ const toolController = {
         return;
       }
 
-      res.status(200).json(tool);
+      res.status(200).json({ tool });
     } catch (error) {
       console.error("Error in getToolById:", error);
       res.status(500).json({ message: "Server error" });

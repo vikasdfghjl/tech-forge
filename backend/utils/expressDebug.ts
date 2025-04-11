@@ -14,29 +14,30 @@ export function createDebugRouter() {
     patch: router.patch.bind(router),
   };
 
-  // Wrap all HTTP methods with debug logging
-  router.get = function(path: string, ...handlers: any[]) {
-    validateHandlers('GET', path, handlers);
+  // Override router methods with debug versions
+  // Using 'any' type to bypass TypeScript's strict checking for the Router methods
+  (router as any).get = function(path: any, ...handlers: any[]) {
+    validateHandlers('GET', String(path), handlers);
     return originalMethods.get(path, ...handlers);
   };
 
-  router.post = function(path: string, ...handlers: any[]) {
-    validateHandlers('POST', path, handlers);
+  (router as any).post = function(path: any, ...handlers: any[]) {
+    validateHandlers('POST', String(path), handlers);
     return originalMethods.post(path, ...handlers);
   };
 
-  router.put = function(path: string, ...handlers: any[]) {
-    validateHandlers('PUT', path, handlers);
+  (router as any).put = function(path: any, ...handlers: any[]) {
+    validateHandlers('PUT', String(path), handlers);
     return originalMethods.put(path, ...handlers);
   };
 
-  router.delete = function(path: string, ...handlers: any[]) {
-    validateHandlers('DELETE', path, handlers);
+  (router as any).delete = function(path: any, ...handlers: any[]) {
+    validateHandlers('DELETE', String(path), handlers);
     return originalMethods.delete(path, ...handlers);
   };
 
-  router.patch = function(path: string, ...handlers: any[]) {
-    validateHandlers('PATCH', path, handlers);
+  (router as any).patch = function(path: any, ...handlers: any[]) {
+    validateHandlers('PATCH', String(path), handlers);
     return originalMethods.patch(path, ...handlers);
   };
 
