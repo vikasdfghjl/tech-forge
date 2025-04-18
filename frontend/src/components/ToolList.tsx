@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Briefcase, MessageSquare, Trash2, ChevronDown, ChevronUp } from "lucide-react";
-import { Tool } from "../hooks/useToolData";
+import { ArrowUp, Briefcase, MessageSquare, Trash2, ChevronDown, ChevronUp, Bookmark } from "lucide-react";
+import { Tool, useToolData } from "../hooks/useToolData";
 import { useAuth } from "../hooks/useAuth";
 import ToolForm from "./ToolForm";
 import ToolComments from "./ToolComments";
@@ -32,6 +32,21 @@ const ToolList = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
   const { user, isAuthenticated } = useAuth();
+  const { bookmarkTool } = useToolData();
+  const [bookmarkedTools, setBookmarkedTools] = useState<Record<string, boolean>>({});
+  
+  // Initialize bookmarked state from props
+  useEffect(() => {
+    if (tools && tools.length > 0) {
+      const initialBookmarkState: Record<string, boolean> = {};
+      tools.forEach(tool => {
+        if (tool._id) {
+          initialBookmarkState[tool._id] = !!tool.bookmarked;
+        }
+      });
+      setBookmarkedTools(initialBookmarkState);
+    }
+  }, [tools]);
 
   const handleToolSubmit = async (name: string, description: string) => {
     setIsSubmitting(true);
@@ -47,6 +62,39 @@ const ToolList = ({
       ...prev,
       [toolId]: !prev[toolId]
     }));
+  };
+
+  // Handle bookmarking a tool
+  const handleBookmark = async (toolId: string) => {
+    if (!isAuthenticated) {
+      return;
+    }
+    
+    try {
+      // Optimistic UI update
+      setBookmarkedTools(prev => ({
+        ...prev,
+        [toolId]: !prev[toolId]
+      }));
+      
+      // Call the API and get the response
+      const response = await bookmarkTool(toolId);
+      
+      // Update with the actual server response to ensure consistency
+      if (response && typeof response.bookmarked === 'boolean') {
+        setBookmarkedTools(prev => ({
+          ...prev,
+          [toolId]: response.bookmarked
+        }));
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      // Revert on error
+      setBookmarkedTools(prev => ({
+        ...prev,
+        [toolId]: !prev[toolId]
+      }));
+    }
   };
 
   // Ensure tools is always an array even if it's undefined
@@ -155,6 +203,17 @@ const ToolList = ({
                     <MessageSquare size={16} />
                     <span>{tool.comments?.length || 0}</span>
                     {expandedComments[tool._id] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </Button>
+
+                  <Button
+                    variant={bookmarkedTools[tool._id] ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => handleBookmark(tool._id)}
+                    className={`flex items-center gap-1.5 h-8 ${bookmarkedTools[tool._id] ? 'bg-primary text-primary-foreground' : ''}`}
+                    disabled={!isAuthenticated}
+                  >
+                    <Bookmark size={16} className={bookmarkedTools[tool._id] ? "fill-current" : ""} />
+                    <span>{bookmarkedTools[tool._id] ? "Bookmarked" : "Bookmark"}</span>
                   </Button>
                   
                   <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground ml-auto">

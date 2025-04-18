@@ -295,7 +295,7 @@ export function useToolData() {
     }
   };
 
-  // New function to handle bookmarking with improved UI feedback
+  // Function to handle bookmarking with improved UI feedback
   const bookmarkTool = async (id: string) => {
     if (!isAuthenticated) {
       toast.error("You must be logged in to bookmark tools");
@@ -313,8 +313,9 @@ export function useToolData() {
       );
       
       // Show loading toast
-      toast.loading("Updating bookmark...");
+      const loadingToast = toast.loading("Updating bookmark...");
       
+      // Call the API
       const response = await apiService.bookmarkTool(id);
       
       // Finalize the state update with the server response
@@ -326,8 +327,10 @@ export function useToolData() {
         )
       );
       
-      toast.dismiss();
+      toast.dismiss(loadingToast);
       toast.success(response.bookmarked ? "Added to bookmarks" : "Removed from bookmarks");
+      
+      // Return full response to allow components to handle bookmark state
       return response;
     } catch (error) {
       // Revert optimistic update on error
@@ -339,7 +342,6 @@ export function useToolData() {
         )
       );
       
-      toast.dismiss();
       console.error('Error bookmarking tool:', error);
       toast.error("Failed to update bookmark");
       throw error;

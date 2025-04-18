@@ -39,6 +39,16 @@ const ToolCard = ({
   const [isUpvoting, setIsUpvoting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(!!tool.bookmarked);
+  
+  // Update local state when tool prop changes - especially bookmarked status
+  useEffect(() => {
+    console.log(`Tool ${tool._id || tool.id} updated:`, { bookmarked: tool.bookmarked, upvotes: tool.upvotes });
+    // Use !! to ensure boolean value regardless of what tool.bookmarked is (could be undefined)
+    const bookmarked = !!tool.bookmarked;
+    setIsBookmarked(bookmarked);
+    setUpvoteCount(tool.upvotes || 0);
+  }, [tool._id, tool.id, tool.bookmarked, tool.upvotes]);
   
   // Keyboard accessibility handling
   useEffect(() => {
@@ -51,30 +61,43 @@ const ToolCard = ({
       }
     };
 
-    if (cardRef.current) {
-      cardRef.current.addEventListener('keydown', handleKeyDown);
+    // Get a reference to the current DOM node
+    const currentRef = cardRef.current;
+
+    if (currentRef) {
+      currentRef.addEventListener('keydown', handleKeyDown);
     }
 
     return () => {
-      if (cardRef.current) {
-        cardRef.current.removeEventListener('keydown', handleKeyDown);
+      // Use the captured reference in the cleanup function
+      if (currentRef) {
+        currentRef.removeEventListener('keydown', handleKeyDown);
       }
     };
   }, [isFocused, isExpanded]);
-  
-  // Format timestamp to relative time (e.g., "2 days ago")
-  const formatDate = (timestamp: number) => {
+
+  // Format timestamp for display
+  const formatDate = (timestamp: number): string => {
     const now = Date.now();
     const diff = now - timestamp;
+    
     const seconds = Math.floor(diff / 1000);
+    if (seconds < 60) {
+      return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
+    }
+    
     const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) {
+      return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    }
+    
     const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+      return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    }
+    
     const days = Math.floor(hours / 24);
-
-    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
-    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-    return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
+    return `${days} day${days !== 1 ? 's' : ''} ago`;
   };
   
   const handleUpvote = async () => {
@@ -161,9 +184,24 @@ const ToolCard = ({
         return;
       }
       
+      console.log(`Bookmark clicked for tool ${toolId}. Current state:`, isBookmarked);
+      
+      // Optimistic UI update for immediate feedback
+      setIsBookmarked(prevState => !prevState);
+      
+      // Call the parent's onBookmark function - don't try to use the return value
       await onBookmark(toolId);
+      
+      // We're not setting state here based on the result because the component will
+      // receive updated props from parent via the useEffect when tool.bookmarked changes
+      
     } catch (error) {
+      // Revert the optimistic update if there's an error
+      setIsBookmarked(prevState => !prevState);
       console.error("Error bookmarking:", error);
+      toast.error("Failed to update bookmark. Please try again.", {
+        position: "bottom-right"
+      });
     }
   };
 
@@ -228,35 +266,9 @@ const ToolCard = ({
         </div>
       )}
       
-      {/* Bookmark button */}
-      <div className="absolute top-3 right-3 z-20">
-        <button
-          className={`flex items-center justify-center w-9 h-9 rounded-full shadow border-2 ${
-            tool.bookmarked 
-              ? 'bg-red-500 text-white border-red-600' 
-              : 'bg-white text-red-500 border-red-300'
-          } hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-400`}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleBookmark();
-          }}
-          title={tool.bookmarked ? "Remove from bookmarks" : "Add to bookmarks"}
-          data-testid="bookmark-button"
-          aria-pressed={tool.bookmarked}
-          aria-label={tool.bookmarked ? "Remove from bookmarks" : "Add to bookmarks"}
-        >
-          <Bookmark 
-            size={20} 
-            fill={tool.bookmarked ? "currentColor" : "none"} 
-            strokeWidth={2}
-            className="pointer-events-none"
-          />
-        </button>
-      </div>
-      
       <div className="flex justify-between items-start mb-3">
         <h3 className="font-semibold text-lg text-gray-900">{tool.name}</h3>
-        <div className="flex space-x-2 mr-10"> {/* Added margin to make space for bookmark icon */}
+        <div className="flex space-x-2">
           <button
             onClick={onDelete}
             className="text-red-500 hover:text-red-700 transition-colors text-sm px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50"
@@ -318,6 +330,32 @@ const ToolCard = ({
             <Briefcase size={14} aria-hidden="true" />
             <span className="text-sm font-medium" aria-hidden="true">{tool.wants}</span>
             <span className="sr-only">{tool.wants} people want this tool</span>
+          </motion.button>
+
+          {/* Bookmark button with enhanced styling */}
+          <motion.button
+            className={`flex items-center space-x-1 px-3 py-1.5 rounded-full ${
+              isBookmarked 
+                ? 'bg-red-100 hover:bg-red-200' 
+                : 'bg-gray-100 hover:bg-gray-200'
+            } transition-colors focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50`}
+            onClick={handleBookmark}
+            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.05 }}
+            disabled={isLoading}
+            aria-label={isBookmarked ? "Remove from bookmarks" : "Add to bookmarks"}
+            aria-pressed={isBookmarked}
+            data-bookmarked={isBookmarked ? "true" : "false"}
+          >
+            <Bookmark 
+              size={14} 
+              aria-hidden="true" 
+              fill={isBookmarked ? "currentColor" : "none"} 
+              className={isBookmarked ? 'text-red-500' : ''}
+            />
+            <span className="text-sm font-medium" aria-hidden="true">
+              {isBookmarked ? "Saved" : "Save"}
+            </span>
           </motion.button>
         </div>
       </div>

@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ToolCard from './ToolCard';
 import { Tool, useToolData } from '../hooks/useToolData';
 import { toast } from 'react-toastify';
 import { LoaderCircle } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 interface ToolsListProps {
   tools: (Tool & { id?: string; _id?: string; bookmarked?: boolean })[];
@@ -11,15 +12,98 @@ interface ToolsListProps {
 }
 
 const ToolsList = ({ tools, onToolUpdate, onToolDelete }: ToolsListProps) => {
-  const { bookmarkTool } = useToolData();
+  const { bookmarkTool, getBookmarkedTools } = useToolData();
+  const { isAuthenticated } = useAuth();
   const [toolsWithStatus, setToolsWithStatus] = useState<(Tool & { id?: string; _id?: string; bookmarked?: boolean })[]>([]);
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const getBookmarkedToolsRef = useRef(getBookmarkedTools);
   
-  // Initialize tools with their status
+  // Update ref when getBookmarkedTools changes
   useEffect(() => {
-    setToolsWithStatus(tools);
-  }, [tools]);
+    getBookmarkedToolsRef.current = getBookmarkedTools;
+  }, [getBookmarkedTools]);
+  
+  // Fetch bookmarked tools and update status when component mounts or authentication changes
+  useEffect(() => {
+    let isMounted = true;
+    const syncBookmarkStatuses = async () => {
+      // Initialize with passed tools first
+      if (isMounted) {
+        setToolsWithStatus(tools);
+      }
+      
+      // Only proceed if user is authenticated
+      if (!isAuthenticated) {
+        return;
+      }
+      
+      try {
+        // Fetch user's bookmarked tools
+        const bookmarkedTools = await getBookmarkedToolsRef.current();
+        
+        if (!isMounted) return;
+        
+        console.log("Fetched user's bookmarked tools:", bookmarkedTools);
+        
+        // Extract bookmarked tool IDs into a Set for efficient lookups
+        const bookmarkedIdsSet = new Set<string>();
+        
+        if (Array.isArray(bookmarkedTools)) {
+          bookmarkedTools.forEach((tool: any) => {
+            if (tool._id) bookmarkedIdsSet.add(tool._id);
+          });
+        } else if (bookmarkedTools && typeof bookmarkedTools === 'object') {
+          // Handle different possible API response formats
+          const toolsArray = 
+            (bookmarkedTools.bookmarkedTools && Array.isArray(bookmarkedTools.bookmarkedTools) ? bookmarkedTools.bookmarkedTools : []) || 
+            (bookmarkedTools.tools && Array.isArray(bookmarkedTools.tools) ? bookmarkedTools.tools : []) || 
+            (bookmarkedTools.bookmarks && Array.isArray(bookmarkedTools.bookmarks) ? bookmarkedTools.bookmarks : []) ||
+            [];
+          
+          toolsArray.forEach((tool: any) => {
+            if (tool._id) bookmarkedIdsSet.add(tool._id);
+          });
+        }
+        
+        if (!isMounted) return;
+        
+        // Store for reference
+        setBookmarkedIds(bookmarkedIdsSet);
+        console.log("Bookmarked IDs set:", [...bookmarkedIdsSet]);
+        
+        // Mark tools as bookmarked if they're in the user's bookmarked list
+        const updatedTools = tools.map(tool => {
+          // Ensure we have an ID to work with
+          const toolId = tool._id || tool.id;
+          if (!toolId) return tool;
+          
+          return {
+            ...tool,
+            bookmarked: bookmarkedIdsSet.has(toolId)
+          };
+        });
+        
+        console.log("Updated tools with bookmark status:", 
+          updatedTools.map(t => ({id: t._id, bookmarked: t.bookmarked}))
+        );
+        
+        if (isMounted) {
+          setToolsWithStatus(updatedTools);
+        }
+      } catch (error) {
+        console.error('Error syncing bookmark statuses:', error);
+      }
+    };
+
+    // Sync bookmark statuses when tools change or auth status changes
+    syncBookmarkStatuses();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [tools, isAuthenticated]); // Removed getBookmarkedTools from dependencies
   
   // Helper to set loading state for a specific operation
   const setLoading = (toolId: string, operation: string, isLoading: boolean) => {
@@ -135,29 +219,42 @@ const ToolsList = ({ tools, onToolUpdate, onToolDelete }: ToolsListProps) => {
     try {
       setLoading(toolId, 'bookmark', true);
       
+      // Get current bookmark state
+      const currentTool = toolsWithStatus.find(t => (t._id || t.id) === toolId);
+      const isCurrentlyBookmarked = currentTool?.bookmarked || false;
+      console.log(`Toggling bookmark for tool ${toolId}. Current state:`, isCurrentlyBookmarked);
+      
       // Optimistic UI update for immediate feedback
-      setToolsWithStatus(prevTools => 
-        prevTools.map(tool => 
+      setToolsWithStatus(prevTools => {
+        const updatedTools = prevTools.map(tool => 
           (tool._id === toolId || tool.id === toolId) 
-            ? { ...tool, bookmarked: !tool.bookmarked } 
+            ? { ...tool, bookmarked: !isCurrentlyBookmarked } 
             : tool
-        )
-      );
+        );
+        console.log("Updated tools after optimistic update:", updatedTools.map(t => ({id: t._id, bookmarked: t.bookmarked})));
+        return updatedTools;
+      });
       
       // Call the API to toggle bookmark
       const response = await bookmarkTool(toolId);
+      console.log("Bookmark response from server:", response);
       
       // Define the response type to access its properties safely
       const bookmarkResponse = response as { bookmarked: boolean; message: string };
       
       // Update the local state with the response from the server
-      setToolsWithStatus(prevTools => 
-        prevTools.map(tool => 
+      setToolsWithStatus(prevTools => {
+        const updatedTools = prevTools.map(tool => 
           (tool._id === toolId || tool.id === toolId) 
             ? { ...tool, bookmarked: bookmarkResponse.bookmarked } 
             : tool
-        )
-      );
+        );
+        console.log("Updated tools after server response:", updatedTools.map(t => ({id: t._id, bookmarked: t.bookmarked})));
+        return updatedTools;
+      });
+      
+      // Update parent component state to ensure consistency
+      onToolUpdate(toolId, { bookmarked: bookmarkResponse.bookmarked });
       
       toast.success(bookmarkResponse.message, {
         position: "bottom-right",
@@ -171,10 +268,13 @@ const ToolsList = ({ tools, onToolUpdate, onToolDelete }: ToolsListProps) => {
       console.error('Error bookmarking tool:', error);
       
       // Revert the optimistic update
+      const currentTool = toolsWithStatus.find(t => (t._id || t.id) === toolId);
+      const isCurrentlyBookmarked = currentTool?.bookmarked || false;
+      
       setToolsWithStatus(prevTools => 
         prevTools.map(tool => 
           (tool._id === toolId || tool.id === toolId) 
-            ? { ...tool, bookmarked: !tool.bookmarked } 
+            ? { ...tool, bookmarked: isCurrentlyBookmarked } 
             : tool
         )
       );
