@@ -14,6 +14,7 @@ import SignupPage from "./pages/SignupPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProfilePage from "./pages/ProfilePage";
 import SubmitToolPage from "./pages/SubmitToolPage";
+import UserProfileDetail from "./pages/UserProfileDetail";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,10 @@ const App = () => {
                         <ProfilePage />
                       </ProtectedRoute>
                     } 
+                  />
+                  <Route 
+                    path="/user/:username" 
+                    element={<UserProfileDetail />} 
                   />
                   <Route path="*" element={<NotFound />} />
                 </Routes>

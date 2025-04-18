@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { ThumbsUp, Briefcase, Clock, Bookmark, Loader2 } from "lucide-react"; 
 import { Tool } from "../hooks/useToolData";
-import ToolComments from "./ToolComments";
+import ToolCommentSection from "./tools/ToolCommentSection";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
@@ -380,7 +380,7 @@ const ToolCard = ({
         </div>
       </div>
 
-      <ToolComments 
+      <ToolCommentSection 
         toolId={tool._id || tool.id || ""}
         comments={tool.comments || []} 
         onAddComment={handleAddComment}

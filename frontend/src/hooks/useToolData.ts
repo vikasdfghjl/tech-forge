@@ -391,6 +391,29 @@ export function useToolData() {
     }
   };
 
+  // Function to get tools posted by a specific user
+  const getToolsByUser = async (userId: string) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/tools/user/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.tools || [];
+    } catch (error) {
+      console.error('Error fetching user tools:', error);
+      throw error;
+    }
+  };
+
   return {
     tools,
     isLoading,
@@ -403,5 +426,6 @@ export function useToolData() {
     bookmarkTool, // Add new bookmark function
     getBookmarkedTools, // Add function to get bookmarked tools
     getPostedTools, // Add the new function to the return object
+    getToolsByUser, // Add the new function to the return object
   };
 }

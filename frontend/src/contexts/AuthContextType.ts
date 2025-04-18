@@ -12,6 +12,8 @@ export interface User {
   bookmarkedTools?: string[];
   upvotedTools?: string[];
   wantedTools?: string[];
+  createdAt?: string; // Add createdAt for displaying join date
+  bio?: string; // Add bio for user profile
 }
 
 export interface AuthContextType {
@@ -31,6 +33,7 @@ export interface AuthContextType {
   ) => Promise<void>;
   logout: () => void;
   clearError: () => void;
+  getUser: (username: string) => Promise<User & { isCurrentUser?: boolean }>; // Add getUser function
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);

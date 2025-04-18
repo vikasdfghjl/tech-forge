@@ -172,6 +172,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const getUser = async (username: string) => {
+    try {
+      const response = await fetch(`${API_URL}/users/profile/${username}`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch user profile: ${response.statusText}`);
+      }
+      
+      const userData = await response.json();
+      
+      // Check if this is the current logged-in user's profile
+      const isCurrentUser = user?._id === userData._id || user?.username === userData.username;
+      
+      return { ...userData, isCurrentUser };
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      throw error;
+    }
+  };
+
   const clearError = () => {
     setError(null);
   };
@@ -185,6 +207,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signup,
     logout,
     clearError,
+    getUser, // Add the new function to the context value
   };
 
   return (

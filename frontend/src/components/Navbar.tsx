@@ -44,6 +44,14 @@ const Navbar = ({ isDarkMode, toggleTheme }: NavbarProps) => {
     navigate("/profile");
   };
 
+  const handleUserProfile = () => {
+    if (user?.username) {
+      navigate(`/user/${user.username}`);
+    } else {
+      toast.error("Cannot access user profile - username not available");
+    }
+  };
+
   const handleSubmit = () => {
     navigate("/submit");
   };
@@ -97,7 +105,8 @@ const Navbar = ({ isDarkMode, toggleTheme }: NavbarProps) => {
                   <span className="text-muted-foreground">{user?.name || "User"}</span>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer" onClick={handleProfile}>Profile</DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer" onClick={handleProfile}>Dashboard</DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer" onClick={handleUserProfile}>Public Profile</DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer">Settings</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>
