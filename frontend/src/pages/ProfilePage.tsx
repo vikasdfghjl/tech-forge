@@ -311,11 +311,13 @@ const ProfilePage = () => {
                   onUpvote={handleUpvote}
                   onWant={handleWant}
                   onAddComment={handleAddComment}
-                  onDelete={() => {}} // Not allowing deletion from bookmark section
-                  onUpdate={() => {}} // Not allowing updates from bookmark section
+                  onDelete={() => {}}
+                  onUpdate={() => {}}
                   onBookmark={handleBookmark}
                   index={index}
                   isLoading={false}
+                  hideAdminButtons={true} // Hide admin buttons
+                  hideInteractionButtons={true} // Hide upvote and want buttons
                 />
               ))}
             </div>

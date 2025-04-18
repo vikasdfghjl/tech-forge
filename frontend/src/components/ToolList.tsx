@@ -148,12 +148,32 @@ const ToolList = ({
             {safeTools.map((tool) => (
               <motion.div
                 key={tool._id}
-                className="tool-card bg-card border border-border/50 p-5 rounded-xl shadow-sm hover:shadow-md transition-all hover:border-primary/20"
+                className="tool-card bg-card border border-border/50 p-5 rounded-xl shadow-sm hover:shadow-md transition-all hover:border-primary/20 relative"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
               >
+                {/* Bookmark button positioned at top right */}
+                <motion.button
+                  className="absolute right-3 top-3 z-20 cursor-pointer focus:outline-none"
+                  onClick={() => isAuthenticated && handleBookmark(tool._id)}
+                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.1 }}
+                  disabled={!isAuthenticated}
+                  aria-label={bookmarkedTools[tool._id] ? "Remove from bookmarks" : "Add to bookmarks"}
+                  aria-pressed={bookmarkedTools[tool._id]}
+                  data-bookmarked={bookmarkedTools[tool._id] ? "true" : "false"}
+                >
+                  <Bookmark 
+                    size={20} 
+                    aria-hidden="true" 
+                    fill={bookmarkedTools[tool._id] ? "currentColor" : "none"} 
+                    className={bookmarkedTools[tool._id] ? 'text-blue-500' : 'text-blue-500'}
+                    strokeWidth={1.5}
+                  />
+                </motion.button>
+
                 <div className="flex justify-between items-start">
                   <h3 className="text-lg font-medium">{tool.name}</h3>
                   
@@ -203,17 +223,6 @@ const ToolList = ({
                     <MessageSquare size={16} />
                     <span>{tool.comments?.length || 0}</span>
                     {expandedComments[tool._id] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  </Button>
-
-                  <Button
-                    variant={bookmarkedTools[tool._id] ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => handleBookmark(tool._id)}
-                    className={`flex items-center gap-1.5 h-8 ${bookmarkedTools[tool._id] ? 'bg-primary text-primary-foreground' : ''}`}
-                    disabled={!isAuthenticated}
-                  >
-                    <Bookmark size={16} className={bookmarkedTools[tool._id] ? "fill-current" : ""} />
-                    <span>{bookmarkedTools[tool._id] ? "Bookmarked" : "Bookmark"}</span>
                   </Button>
                   
                   <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground ml-auto">

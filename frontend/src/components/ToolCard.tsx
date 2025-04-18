@@ -17,6 +17,8 @@ type ToolCardProps = {
   onBookmark?: (id: string) => void;
   index: number;
   isLoading?: boolean;
+  hideAdminButtons?: boolean; // New prop to control visibility of admin buttons
+  hideInteractionButtons?: boolean; // New prop to control visibility of upvote and want buttons
 }
 
 const ToolCard = ({ 
@@ -28,7 +30,9 @@ const ToolCard = ({
   onUpdate, 
   onBookmark = () => {}, 
   index,
-  isLoading = false
+  isLoading = false,
+  hideAdminButtons = false, // Default to showing admin buttons
+  hideInteractionButtons = false // Default to showing interaction buttons
 }: ToolCardProps) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -40,6 +44,14 @@ const ToolCard = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(!!tool.bookmarked);
+  
+  // Check if onDelete and onUpdate are meaningful functions (not empty)
+  const hasDeleteFunction = onDelete.toString() !== (() => {}).toString() && !hideAdminButtons;
+  const hasUpdateFunction = onUpdate.toString() !== (() => {}).toString() && !hideAdminButtons;
+  
+  // Check if onUpvote and onWant are meaningful functions
+  const hasUpvoteFunction = onUpvote.toString() !== (() => {}).toString() && !hideInteractionButtons;
+  const hasWantFunction = onWant.toString() !== (() => {}).toString() && !hideInteractionButtons;
   
   // Update local state when tool prop changes - especially bookmarked status
   useEffect(() => {
@@ -266,24 +278,52 @@ const ToolCard = ({
         </div>
       )}
       
+      {/* Bookmark button positioned at top right */}
+      <motion.button
+        className="absolute right-3 top-3 z-20 cursor-pointer focus:outline-none"
+        onClick={handleBookmark}
+        whileTap={{ scale: 0.95 }}
+        whileHover={{ scale: 1.1 }}
+        disabled={isLoading}
+        aria-label={isBookmarked ? "Remove from bookmarks" : "Add to bookmarks"}
+        aria-pressed={isBookmarked}
+        data-bookmarked={isBookmarked ? "true" : "false"}
+      >
+        <Bookmark 
+          size={20} 
+          aria-hidden="true" 
+          fill={isBookmarked ? "currentColor" : "none"} 
+          className={isBookmarked ? 'text-blue-500' : 'text-blue-500'}
+          strokeWidth={1.5}
+        />
+      </motion.button>
+      
       <div className="flex justify-between items-start mb-3">
         <h3 className="font-semibold text-lg text-gray-900">{tool.name}</h3>
-        <div className="flex space-x-2">
-          <button
-            onClick={onDelete}
-            className="text-red-500 hover:text-red-700 transition-colors text-sm px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50"
-            aria-label={`Delete ${tool.name}`}
-          >
-            Delete
-          </button>
-          <button
-            onClick={() => onUpdate({ name: "Updated Name", description: "Updated Description" })}
-            className="text-blue-500 hover:text-blue-700 transition-colors text-sm px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50"
-            aria-label={`Update ${tool.name}`}
-          >
-            Update
-          </button>
-        </div>
+        
+        {/* Only show admin buttons if they have meaningful functions */}
+        {(hasDeleteFunction || hasUpdateFunction) && (
+          <div className="flex space-x-2">
+            {hasDeleteFunction && (
+              <button
+                onClick={onDelete}
+                className="text-red-500 hover:text-red-700 transition-colors text-sm px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50"
+                aria-label={`Delete ${tool.name}`}
+              >
+                Delete
+              </button>
+            )}
+            {hasUpdateFunction && (
+              <button
+                onClick={() => onUpdate({ name: "Updated Name", description: "Updated Description" })}
+                className="text-blue-500 hover:text-blue-700 transition-colors text-sm px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50"
+                aria-label={`Update ${tool.name}`}
+              >
+                Update
+              </button>
+            )}
+          </div>
+        )}
       </div>
       
       <div className="flex items-center text-xs text-gray-500 mt-1 mb-2" aria-label="Posted date">
@@ -301,62 +341,42 @@ const ToolCard = ({
         </div>
         
         <div className="flex items-center space-x-2" style={{minHeight: '40px'}}>
-          <motion.button
-            className={`flex items-center space-x-1 px-3 py-1.5 rounded-full ${
-              userUpvoted 
-                ? 'bg-blue-100 hover:bg-blue-200' 
-                : 'bg-gray-100 hover:bg-gray-200'
-            } transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50`}
-            onClick={handleUpvote}
-            whileTap={{ scale: 0.98 }}
-            whileHover={{ scale: 1.05 }}
-            disabled={isUpvoting || isLoading}
-            aria-label={`Upvote this tool. Current upvotes: ${tool.upvotes}`}
-            aria-pressed={userUpvoted}
-          >
-            <ThumbsUp size={14} aria-hidden="true" className={userUpvoted ? 'text-blue-500' : ''} />
-            <span className="text-sm font-medium" aria-hidden="true">{tool.upvotes}</span>
-            <span className="sr-only">{tool.upvotes} upvotes</span>
-          </motion.button>
+          {/* Only show upvote button if function is provided and not hidden */}
+          {hasUpvoteFunction && (
+            <motion.button
+              className={`flex items-center space-x-1 px-3 py-1.5 rounded-full ${
+                userUpvoted 
+                  ? 'bg-blue-100 hover:bg-blue-200' 
+                  : 'bg-gray-100 hover:bg-gray-200'
+              } transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50`}
+              onClick={handleUpvote}
+              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: 1.05 }}
+              disabled={isUpvoting || isLoading}
+              aria-label={`Upvote this tool. Current upvotes: ${tool.upvotes}`}
+              aria-pressed={userUpvoted}
+            >
+              <ThumbsUp size={14} aria-hidden="true" className={userUpvoted ? 'text-blue-500' : ''} />
+              <span className="text-sm font-medium" aria-hidden="true">{tool.upvotes}</span>
+              <span className="sr-only">{tool.upvotes} upvotes</span>
+            </motion.button>
+          )}
           
-          <motion.button
-            className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-opacity-50"
-            onClick={handleWant}
-            whileTap={{ scale: 0.98 }}
-            whileHover={{ scale: 1.05 }}
-            disabled={isLoading}
-            aria-label={`Mark as wanted. Current wants: ${tool.wants}`}
-          >
-            <Briefcase size={14} aria-hidden="true" />
-            <span className="text-sm font-medium" aria-hidden="true">{tool.wants}</span>
-            <span className="sr-only">{tool.wants} people want this tool</span>
-          </motion.button>
-
-          {/* Bookmark button with enhanced styling */}
-          <motion.button
-            className={`flex items-center space-x-1 px-3 py-1.5 rounded-full ${
-              isBookmarked 
-                ? 'bg-red-100 hover:bg-red-200' 
-                : 'bg-gray-100 hover:bg-gray-200'
-            } transition-colors focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50`}
-            onClick={handleBookmark}
-            whileTap={{ scale: 0.98 }}
-            whileHover={{ scale: 1.05 }}
-            disabled={isLoading}
-            aria-label={isBookmarked ? "Remove from bookmarks" : "Add to bookmarks"}
-            aria-pressed={isBookmarked}
-            data-bookmarked={isBookmarked ? "true" : "false"}
-          >
-            <Bookmark 
-              size={14} 
-              aria-hidden="true" 
-              fill={isBookmarked ? "currentColor" : "none"} 
-              className={isBookmarked ? 'text-red-500' : ''}
-            />
-            <span className="text-sm font-medium" aria-hidden="true">
-              {isBookmarked ? "Saved" : "Save"}
-            </span>
-          </motion.button>
+          {/* Only show want button if function is provided and not hidden */}
+          {hasWantFunction && (
+            <motion.button
+              className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-opacity-50"
+              onClick={handleWant}
+              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: 1.05 }}
+              disabled={isLoading}
+              aria-label={`Mark as wanted. Current wants: ${tool.wants}`}
+            >
+              <Briefcase size={14} aria-hidden="true" />
+              <span className="text-sm font-medium" aria-hidden="true">{tool.wants}</span>
+              <span className="sr-only">{tool.wants} people want this tool</span>
+            </motion.button>
+          )}
         </div>
       </div>
 
