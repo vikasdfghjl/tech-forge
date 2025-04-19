@@ -33,7 +33,7 @@ const ToolCollection = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
   const { user, isAuthenticated } = useAuth();
-  const { bookmarkTool } = useToolData();
+  const { bookmarkTool, editComment, deleteComment } = useToolData();
   const [bookmarkedTools, setBookmarkedTools] = useState<Record<string, boolean>>({});
   
   // Initialize bookmarked state from props
@@ -96,6 +96,34 @@ const ToolCollection = ({
         [toolId]: !prev[toolId]
       }));
     }
+  };
+
+  const handleEditComment = async (toolId: string, commentId: string, newText: string) => {
+    try {
+      await editComment(toolId, commentId, newText);
+      return Promise.resolve();
+    } catch (error) {
+      console.error("Error editing comment:", error);
+      return Promise.reject(error);
+    }
+  };
+
+  const handleDeleteComment = async (toolId: string, commentId: string) => {
+    try {
+      await deleteComment(toolId, commentId);
+      return Promise.resolve();
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      return Promise.reject(error);
+    }
+  };
+
+  // Handle comment section toggle from the child component
+  const handleCommentToggle = (toolId: string, expanded: boolean) => {
+    setExpandedComments(prev => ({
+      ...prev,
+      [toolId]: expanded
+    }));
   };
 
   // Ensure tools is always an array even if it's undefined
@@ -215,11 +243,14 @@ const ToolCollection = ({
                     <span>{tool.wants || 0}</span>
                   </Button>
                   
+                  {/* Comment button with toggle functionality */}
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => toggleComments(tool._id)}
-                    className="flex items-center gap-1.5 ml-auto h-8"
+                    className={`flex items-center gap-1.5 ml-auto h-8 ${
+                      expandedComments[tool._id] ? 'text-blue-600' : ''
+                    }`}
                   >
                     <MessageSquare size={16} />
                     <span>{tool.comments?.length || 0}</span>
@@ -233,22 +264,16 @@ const ToolCollection = ({
                   </div>
                 </div>
                 
-                <AnimatePresence>
-                  {expandedComments[tool._id] && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <ToolCommentSection 
-                        toolId={tool._id} 
-                        comments={tool.comments || []} 
-                        onAddComment={(text) => onAddComment(tool._id, text)}
-                      />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {/* ToolCommentSection with two-way communication */}
+                <ToolCommentSection 
+                  toolId={tool._id} 
+                  comments={tool.comments || []} 
+                  onAddComment={(text) => onAddComment(tool._id, text)}
+                  onEditComment={(commentId, text) => handleEditComment(tool._id, commentId, text)}
+                  onDeleteComment={(commentId) => handleDeleteComment(tool._id, commentId)}
+                  initiallyExpanded={expandedComments[tool._id] || false}
+                  onToggleExpand={(expanded) => handleCommentToggle(tool._id, expanded)}
+                />
               </motion.div>
             ))}
           </div>

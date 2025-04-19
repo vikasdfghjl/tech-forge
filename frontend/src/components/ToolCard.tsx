@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { ThumbsUp, Briefcase, Clock, Bookmark, Loader2 } from "lucide-react"; 
-import { Tool } from "../hooks/useToolData";
+import { Tool, useToolData } from "../hooks/useToolData";
 import ToolCommentSection from "./tools/ToolCommentSection";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -36,6 +36,7 @@ const ToolCard = ({
 }: ToolCardProps) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { editComment, deleteComment } = useToolData();
   const cardRef = useRef<HTMLDivElement>(null);
   
   const [upvoteCount, setUpvoteCount] = useState(tool.upvotes || 0);
@@ -244,6 +245,60 @@ const ToolCard = ({
     }
   };
 
+  const handleEditComment = async (commentId: string, newText: string) => {
+    try {
+      if (!isAuthenticated) {
+        toast.error("Please log in to edit comments", {
+          position: "bottom-right",
+          autoClose: 4000
+        });
+        navigate("/login");
+        return Promise.reject(new Error("Authentication required"));
+      }
+      
+      const toolId = tool._id || tool.id;
+      if (!toolId) {
+        console.error("Tool ID is missing!");
+        toast.error("Cannot edit comment: Tool ID is missing");
+        return Promise.reject(new Error("Tool ID is missing"));
+      }
+      
+      await editComment(toolId, commentId, newText);
+      return Promise.resolve();
+    } catch (error) {
+      console.error("Error editing comment:", error);
+      toast.error("Failed to edit comment");
+      return Promise.reject(error);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      if (!isAuthenticated) {
+        toast.error("Please log in to delete comments", {
+          position: "bottom-right",
+          autoClose: 4000
+        });
+        navigate("/login");
+        return Promise.reject(new Error("Authentication required"));
+      }
+      
+      const toolId = tool._id || tool.id;
+      if (!toolId) {
+        console.error("Tool ID is missing!");
+        toast.error("Cannot delete comment: Tool ID is missing");
+        return Promise.reject(new Error("Tool ID is missing"));
+      }
+      
+      await deleteComment(toolId, commentId);
+      return Promise.resolve();
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast.error("Failed to delete comment");
+      return Promise.reject(error);
+    }
+  };
+
   // Extract creator name safely
   const creatorName = typeof tool.creator === 'object' 
     ? tool.creator.username || tool.creator.name || 'Unknown User'
@@ -384,7 +439,10 @@ const ToolCard = ({
         toolId={tool._id || tool.id || ""}
         comments={tool.comments || []} 
         onAddComment={handleAddComment}
+        onEditComment={handleEditComment}
+        onDeleteComment={handleDeleteComment}
         isCardLoading={isLoading}
+        initiallyExpanded={true} // Set initiallyExpanded to true for direct access
       />
     </motion.div>
   );

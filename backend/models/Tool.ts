@@ -5,6 +5,12 @@ export interface IComment extends Document {
   text: string;
   author: mongoose.Types.ObjectId;
   createdAt: Date;
+  remove(): Promise<this>;
+}
+
+// Define a type for the comments array that includes Mongoose subdocument methods
+export interface ICommentArray extends Array<IComment> {
+  id(id: string | mongoose.Types.ObjectId): IComment | null;
 }
 
 // Define the Comment schema as a sub-schema
@@ -33,7 +39,7 @@ export interface ITool extends Document {
   creator: mongoose.Types.ObjectId;
   upvotes: number;
   wants: number;
-  comments: IComment[];
+  comments: ICommentArray;
   createdAt: Date;
   updatedAt: Date;
 }

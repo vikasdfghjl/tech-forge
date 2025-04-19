@@ -19,7 +19,12 @@ const toolController = {
         filter.category = req.query.category;
       }
       
-      const tools = await Tool.find(filter);
+      // Updated to populate comment author information
+      const tools = await Tool.find(filter)
+        .populate({
+          path: 'comments.author',
+          select: 'username name email'
+        });
       console.log("Tools fetched:", tools);
       res.status(200).json({ tools });
     } catch (error) {
@@ -135,7 +140,12 @@ const toolController = {
         return;
       }
 
-      const tool = await Tool.findById(id);
+      // Updated to populate author information for comments
+      const tool = await Tool.findById(id)
+        .populate({
+          path: 'comments.author',
+          select: 'username name email'
+        });
 
       if (!tool) {
         res.status(404).json({ message: "Tool not found" });
@@ -467,6 +477,146 @@ const toolController = {
     }
   },
 
+  // Edit an existing comment
+  editComment: async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const { id: toolId, commentId } = req.params;
+      const { text } = req.body;
+
+      // Validate parameters
+      if (!mongoose.Types.ObjectId.isValid(toolId) || !mongoose.Types.ObjectId.isValid(commentId)) {
+        res.status(400).json({ message: 'Invalid IDs provided' });
+        return;
+      }
+
+      // Check if user is authenticated
+      if (!req.user || !req.user._id) {
+        res.status(401).json({ message: 'You must be logged in to edit comments' });
+        return;
+      }
+
+      // Validate comment text
+      if (!text || typeof text !== 'string' || text.trim() === '') {
+        res.status(400).json({ message: 'Comment text is required' });
+        return;
+      }
+
+      // Find the tool with the comment
+      const tool = await Tool.findById(toolId);
+      if (!tool) {
+        res.status(404).json({ message: 'Tool not found' });
+        return;
+      }
+
+      // Find the comment in the tool's comments array
+      const commentToEdit = tool.comments.id(commentId);
+      if (!commentToEdit) {
+        res.status(404).json({ message: 'Comment not found' });
+        return;
+      }
+
+      // Check if the user is the author of the comment
+      if (commentToEdit.author.toString() !== req.user._id.toString()) {
+        res.status(403).json({ message: 'You can only edit your own comments' });
+        return;
+      }
+
+      // Update the comment text and save
+      commentToEdit.text = text.trim();
+      await tool.save();
+
+      // Populate author information
+      const populatedTool = await Tool.findById(toolId)
+        .populate({
+          path: 'comments.author',
+          select: 'username name email'
+        });
+
+      if (!populatedTool) {
+        res.status(404).json({ message: 'Tool not found after updating comment' });
+        return;
+      }
+
+      // Get the updated comment
+      const updatedComment = populatedTool.comments.id(commentId);
+      if (!updatedComment) {
+        res.status(404).json({ message: 'Comment not found after updating' });
+        return;
+      }
+
+      const authorObj = updatedComment.author as any;
+
+      // Return the updated comment
+      res.status(200).json({
+        _id: updatedComment._id,
+        id: updatedComment._id,
+        text: updatedComment.text,
+        author: authorObj.username || authorObj.name || authorObj.email || 'Anonymous',
+        authorId: updatedComment.author,
+        createdAt: updatedComment.createdAt,
+        timestamp: updatedComment.createdAt.getTime()
+      });
+    } catch (error) {
+      console.error('Error editing comment:', error);
+      res.status(500).json({ message: 'Server error while editing comment' });
+    }
+  },
+
+  // Delete a comment
+  deleteComment: async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const { id: toolId, commentId } = req.params;
+
+      // Validate parameters
+      if (!mongoose.Types.ObjectId.isValid(toolId) || !mongoose.Types.ObjectId.isValid(commentId)) {
+        res.status(400).json({ message: 'Invalid IDs provided' });
+        return;
+      }
+
+      // Check if user is authenticated
+      if (!req.user || !req.user._id) {
+        res.status(401).json({ message: 'You must be logged in to delete comments' });
+        return;
+      }
+
+      // Find the tool with the comment
+      const tool = await Tool.findById(toolId);
+      if (!tool) {
+        res.status(404).json({ message: 'Tool not found' });
+        return;
+      }
+
+      // Find the comment in the tool's comments array
+      const commentToDelete = tool.comments.id(commentId);
+      if (!commentToDelete) {
+        res.status(404).json({ message: 'Comment not found' });
+        return;
+      }
+
+      // Check if the user is the author of the comment
+      if (commentToDelete.author.toString() !== req.user._id.toString()) {
+        res.status(403).json({ message: 'You can only delete your own comments' });
+        return;
+      }
+
+      // Remove the comment and save
+      const commentToRemove = tool.comments.id(commentId);
+      if (commentToRemove) {
+        commentToRemove.remove();
+        await tool.save();
+      }
+
+      // Return success message
+      res.status(200).json({
+        success: true,
+        message: 'Comment deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      res.status(500).json({ message: 'Server error while deleting comment' });
+    }
+  },
+
   // Get all tools created by the currently logged in user
   getUserTools: async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -477,9 +627,14 @@ const toolController = {
       }
   
       // Find all tools created by this user
+      // Updated to populate comment author information as well
       const tools = await Tool.find({ creator: req.user._id })
         .sort({ createdAt: -1 })
-        .populate('creator', 'name username email');
+        .populate('creator', 'name username email')
+        .populate({
+          path: 'comments.author',
+          select: 'username name email'
+        });
   
       res.status(200).json({ 
         success: true,

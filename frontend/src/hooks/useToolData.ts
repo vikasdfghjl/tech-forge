@@ -24,9 +24,16 @@ export interface Tool {
 export interface Comment {
   id: string;
   text: string;
-  author: string;
+  author: string | {
+    _id?: string;
+    username?: string;
+    name?: string;
+    email?: string;
+  };
+  authorId?: string; // To track who created the comment for permission checks
   timestamp?: number; // Make timestamp optional since it might not come from API
   _id?: string; // Add optional _id field to handle API responses
+  isEditing?: boolean; // To track UI editing state
 }
 
 // Update the NewTool type to match our CreateToolPayload
@@ -274,7 +281,10 @@ export function useToolData() {
             const typedComment: Comment = {
               ...newComment,
               id: newComment.id || newComment._id || Date.now().toString(),
-              author: newComment.author || "Anonymous",
+              // Handle author properly - could be a string or object with username/name/email
+              author: typeof newComment.author === 'object' 
+                ? (newComment.author.username || newComment.author.name || newComment.author.email || "Anonymous")
+                : newComment.author || "Anonymous",
               timestamp: newComment.timestamp || Date.now()
             };
             
@@ -291,6 +301,83 @@ export function useToolData() {
     } catch (err: unknown) {
       console.error("Error adding comment:", err);
       toast.error(err instanceof Error ? err.message : "Failed to add comment");
+      throw err;
+    }
+  };
+
+  // Function to edit a comment
+  const editComment = async (toolId: string, commentId: string, newText: string) => {
+    if (!isAuthenticated) {
+      toast.error("You must be logged in to edit comments");
+      throw new Error("Authentication required");
+    }
+
+    try {
+      // Make API request to update the comment
+      const updatedComment = await apiService.put(`/tools/${toolId}/comments/${commentId}`, { 
+        text: newText 
+      });
+      
+      // Update the local state with the edited comment
+      setTools(prev => 
+        prev.map(tool => {
+          if (tool._id === toolId) {
+            const updatedComments = (tool.comments || []).map(comment => {
+              if ((comment._id === commentId) || (comment.id === commentId)) {
+                return {
+                  ...comment,
+                  text: newText,
+                  isEditing: false
+                };
+              }
+              return comment;
+            });
+            
+            return { ...tool, comments: updatedComments };
+          }
+          return tool;
+        })
+      );
+      
+      toast.success("Comment updated successfully");
+      return updatedComment;
+    } catch (err: unknown) {
+      console.error("Error editing comment:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to edit comment");
+      throw err;
+    }
+  };
+
+  // Function to delete a comment
+  const deleteComment = async (toolId: string, commentId: string) => {
+    if (!isAuthenticated) {
+      toast.error("You must be logged in to delete comments");
+      throw new Error("Authentication required");
+    }
+
+    try {
+      // Make API request to delete the comment
+      await apiService.request(`/tools/${toolId}/comments/${commentId}`, {
+        method: 'DELETE',
+      });
+      
+      // Update the local state by removing the deleted comment
+      setTools(prev => 
+        prev.map(tool => {
+          if (tool._id === toolId) {
+            const updatedComments = (tool.comments || []).filter(comment => 
+              (comment._id !== commentId) && (comment.id !== commentId)
+            );
+            return { ...tool, comments: updatedComments };
+          }
+          return tool;
+        })
+      );
+      
+      toast.success("Comment deleted successfully");
+    } catch (err: unknown) {
+      console.error("Error deleting comment:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to delete comment");
       throw err;
     }
   };
@@ -423,6 +510,8 @@ export function useToolData() {
     wantTool,
     deleteTool,
     addComment,
+    editComment, // Add the new edit comment function to the return object
+    deleteComment, // Add the new delete comment function to the return object
     bookmarkTool, // Add new bookmark function
     getBookmarkedTools, // Add function to get bookmarked tools
     getPostedTools, // Add the new function to the return object

@@ -34,6 +34,10 @@ router.get('/:id/interaction-status', protect, (req, res) => {
 // Add a route for adding comments
 router.post('/:id/comments', protect, toolController.addComment);
 
+// Add routes for editing and deleting comments
+router.put('/:id/comments/:commentId', protect, toolController.editComment);
+router.delete('/:id/comments/:commentId', protect, toolController.deleteComment);
+
 // Get tools created by the current user
 router.get('/user/me', protect, toolController.getUserTools);
 
