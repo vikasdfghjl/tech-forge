@@ -122,13 +122,19 @@ const ToolCommentSection = ({
   const getAuthorName = (author: string | object | undefined): string => {
     if (!author) return "Anonymous";
     
-    // If author is a string, use it directly
-    if (typeof author === 'string') return author;
-    
-    // If author is an object, try to get username, name, or email
+    // If author is an object, try to get username first, then name or email
     if (typeof author === 'object') {
       const authorObj = author as Record<string, string | undefined>;
       return authorObj.username || authorObj.name || authorObj.email || "Anonymous";
+    }
+    
+    // If author is a string but looks like an ObjectID, it's not properly populated
+    if (typeof author === 'string') {
+      // Check if it looks like a MongoDB ObjectID (24 chars, hex)
+      if (/^[0-9a-f]{24}$/i.test(author)) {
+        return "User"; // Generic fallback for non-populated IDs
+      }
+      return author; // Use the string directly if it doesn't look like an ID
     }
     
     return "Anonymous";

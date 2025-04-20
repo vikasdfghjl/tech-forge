@@ -108,7 +108,25 @@ router.get('/bookmarks', protect, async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'User not authenticated' });
     }
 
-    const user = await User.findById(userId).populate('bookmarkedTools');
+    // Find user and populate bookmarkedTools with creator and comment author information
+    const user = await User.findById(userId)
+      .populate({
+        path: 'bookmarkedTools',
+        populate: [
+          {
+            // Populate the creator field with username and other info
+            path: 'creator',
+            model: 'User',
+            select: 'username name _id email'
+          },
+          {
+            // Populate comment authors (keeping this from previous change)
+            path: 'comments.author',
+            model: 'User',
+            select: 'username name _id email'
+          }
+        ]
+      });
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
