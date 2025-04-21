@@ -8,6 +8,9 @@ const router = express.Router();
 // Apply optional auth to all routes by default
 router.use(optionalAuth);
 
+// Get tools created by the current user - must be defined before /:id routes
+router.get('/user', protect, toolController.getUserTools);
+
 // Public routes
 router.get('/', toolController.getTools);
 router.get('/:id', toolController.getToolById);
@@ -16,13 +19,8 @@ router.get('/:id', toolController.getToolById);
 router.post('/', protect, toolController.createTool);
 router.put('/:id', protect, toolController.updateTool);
 router.delete('/:id', protect, toolController.deleteTool);
-router.put('/:id/upvote', protect, toolController.upvoteTool);
-router.put('/:id/want', protect, toolController.wantTool);
-
-// Define interaction routes
-router.get('/interactions/status', protect, getInteractionStatus);
-router.put('/:id/upvote', protect, toolController.upvoteTool);
-router.put('/:id/want', protect, toolController.wantTool);
+router.post('/:id/upvote', protect, toolController.upvoteTool);
+router.post('/:id/want', protect, toolController.wantTool);
 
 // Get interaction status for a specific tool
 router.get('/:id/interaction-status', protect, (req, res) => {
@@ -37,9 +35,6 @@ router.post('/:id/comments', protect, toolController.addComment);
 // Add routes for editing and deleting comments
 router.put('/:id/comments/:commentId', protect, toolController.editComment);
 router.delete('/:id/comments/:commentId', protect, toolController.deleteComment);
-
-// Get tools created by the current user
-router.get('/user/me', protect, toolController.getUserTools);
 
 export default router;
 

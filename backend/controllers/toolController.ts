@@ -599,12 +599,11 @@ const toolController = {
         return;
       }
 
-      // Remove the comment and save
-      const commentToRemove = tool.comments.id(commentId);
-      if (commentToRemove) {
-        commentToRemove.remove();
-        await tool.save();
-      }
+      // Use Mongoose's pull-style operation by updating the tool document
+      await Tool.updateOne(
+        { _id: toolId },
+        { $pull: { comments: { _id: commentId } } }
+      );
 
       // Return success message
       res.status(200).json({

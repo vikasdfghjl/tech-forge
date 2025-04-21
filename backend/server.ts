@@ -12,7 +12,8 @@ import connectDB from "./config/db";
 
 dotenv.config();
 
-const app: Application = express();
+// Export app for testing purposes
+export const app: Application = express();
 
 // Global route error handler to catch and log errors during route registration
 const originalUse = app.use.bind(app);
@@ -93,9 +94,11 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 connectDB().then(() => {
   console.log('MongoDB connected successfully');
   
-  // Only start the server after successful DB connection
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  // Only start the server if it's not being imported for testing
+  if (process.env.NODE_ENV !== 'test') {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  }
 }).catch(err => {
   console.error('Failed to connect to MongoDB:', err);
   process.exit(1);

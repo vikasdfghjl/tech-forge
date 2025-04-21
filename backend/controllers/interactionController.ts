@@ -146,14 +146,14 @@ export const toggleWant = async (req: AuthRequest, res: Response) => {
 };
 
 // Get interaction status for an item
-export const getInteractionStatus = async (req: Request, res: Response) => {
+export const getInteractionStatus = async (req: AuthRequest, res: Response) => {
   console.log('getInteractionStatus called with params:', { 
     query: req.query,
     user: req.user ? 'authenticated' : 'unauthenticated'
   });
   
   try {
-    if (!req.user) {
+    if (!req.user || !req.user._id) {
       return res.status(401).json({ message: 'User not authenticated' });
     }
 
@@ -163,22 +163,9 @@ export const getInteractionStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Item type and ID are required' });
     }
 
-    const interaction = await Interaction.findOne({
-      userId: req.user._id,
-      itemType,
-      itemId
-    });
-
-    if (!interaction) {
-      return res.json({
-        hasUpvoted: false,
-        hasWanted: false
-      });
-    }
-
-    // Return the interaction status with proper property names
+    // Perform separate queries for upvote and want interactions
     const upvoteInteraction = await Interaction.findOne({
-      user: req.user._id,
+      user: req.user._id, // Fixed: changed from userId to user
       itemType,
       itemId,
       interactionType: 'upvote',
@@ -186,12 +173,14 @@ export const getInteractionStatus = async (req: Request, res: Response) => {
     });
     
     const wantInteraction = await Interaction.findOne({
-      user: req.user._id,
+      user: req.user._id, // Fixed: changed from userId to user
       itemType,
       itemId,
       interactionType: 'want',
       active: true
     });
+    
+    console.log(`Interaction status for ${itemId}: upvoted=${!!upvoteInteraction}, wanted=${!!wantInteraction}`);
     
     return res.json({
       hasUpvoted: !!upvoteInteraction,
