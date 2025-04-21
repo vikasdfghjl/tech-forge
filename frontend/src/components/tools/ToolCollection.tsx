@@ -129,6 +129,56 @@ const ToolCollection = ({
   // Ensure tools is always an array even if it's undefined
   const safeTools = Array.isArray(tools) ? tools : [];
 
+  // Format timestamp for display
+  const formatDate = (dateInput: string | number | Date): string => {
+    try {
+      // Handle different date formats
+      const dateObj = dateInput instanceof Date 
+        ? dateInput 
+        : typeof dateInput === 'number' 
+          ? new Date(dateInput) 
+          : new Date(dateInput);
+      
+      // Check if the date is valid
+      if (isNaN(dateObj.getTime())) {
+        return "Unknown date";
+      }
+      
+      const now = new Date();
+      const diff = now.getTime() - dateObj.getTime();
+      
+      const seconds = Math.floor(diff / 1000);
+      if (seconds < 60) {
+        return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
+      }
+      
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) {
+        return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+      }
+      
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) {
+        return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+      }
+      
+      const days = Math.floor(hours / 24);
+      if (days < 30) {
+        return `${days} day${days !== 1 ? 's' : ''} ago`;
+      }
+      
+      // For older dates, show the actual date in a readable format
+      return dateObj.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Unknown date";
+    }
+  };
+
   return (
     <div className="space-y-6 w-full">
       {/* Tool submission form - conditionally rendered */}
@@ -259,7 +309,7 @@ const ToolCollection = ({
                   
                   <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground ml-auto">
                     <time dateTime={tool.createdAt}>
-                      {new Date(tool.createdAt).toLocaleDateString()}
+                      {formatDate(tool.createdAt)}
                     </time>
                   </div>
                 </div>

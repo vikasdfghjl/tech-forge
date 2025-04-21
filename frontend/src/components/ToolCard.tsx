@@ -90,27 +90,53 @@ const ToolCard = ({
   }, [isFocused, isExpanded]);
 
   // Format timestamp for display
-  const formatDate = (timestamp: number): string => {
-    const now = Date.now();
-    const diff = now - timestamp;
-    
-    const seconds = Math.floor(diff / 1000);
-    if (seconds < 60) {
-      return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
+  const formatDate = (dateInput: string | number | Date): string => {
+    try {
+      // Handle different date formats
+      const dateObj = dateInput instanceof Date 
+        ? dateInput 
+        : typeof dateInput === 'number' 
+          ? new Date(dateInput) 
+          : new Date(dateInput);
+      
+      // Check if the date is valid
+      if (isNaN(dateObj.getTime())) {
+        return "Unknown date";
+      }
+      
+      const now = new Date();
+      const diff = now.getTime() - dateObj.getTime();
+      
+      const seconds = Math.floor(diff / 1000);
+      if (seconds < 60) {
+        return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
+      }
+      
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) {
+        return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+      }
+      
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) {
+        return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+      }
+      
+      const days = Math.floor(hours / 24);
+      if (days < 30) {
+        return `${days} day${days !== 1 ? 's' : ''} ago`;
+      }
+      
+      // For older dates, show the actual date in a readable format
+      return dateObj.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Unknown date";
     }
-    
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) {
-      return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
-    }
-    
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) {
-      return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
-    }
-    
-    const days = Math.floor(hours / 24);
-    return `${days} day${days !== 1 ? 's' : ''} ago`;
   };
   
   const handleUpvote = async () => {
@@ -383,7 +409,9 @@ const ToolCard = ({
       
       <div className="flex items-center text-xs text-gray-500 mt-1 mb-2" aria-label="Posted date">
         <Clock size={12} className="mr-1" aria-hidden="true" />
-        <time dateTime={new Date(tool.timestamp || 0).toISOString()}>{formatDate(tool.timestamp || 0)}</time>
+        <time dateTime={new Date(tool.createdAt || tool.timestamp || 0).toISOString()}>
+          {formatDate(tool.createdAt || tool.timestamp || 0)}
+        </time>
       </div>
       
       <p className="text-gray-600 mb-4 text-sm">
@@ -442,7 +470,7 @@ const ToolCard = ({
         onEditComment={handleEditComment}
         onDeleteComment={handleDeleteComment}
         isCardLoading={isLoading}
-        initiallyExpanded={true} // Set initiallyExpanded to true for direct access
+        initiallyExpanded={false} // Set initiallyExpanded to false so comments are collapsed by default
       />
     </motion.div>
   );
