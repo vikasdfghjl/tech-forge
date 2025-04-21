@@ -407,11 +407,25 @@ const ToolCard = ({
         )}
       </div>
       
-      <div className="flex items-center text-xs text-gray-500 mt-1 mb-2" aria-label="Posted date">
-        <Clock size={12} className="mr-1" aria-hidden="true" />
-        <time dateTime={new Date(tool.createdAt || tool.timestamp || 0).toISOString()}>
-          {formatDate(tool.createdAt || tool.timestamp || 0)}
-        </time>
+      <div className="flex items-center text-xs text-gray-500 mt-1 mb-2 space-x-2">
+        {/* Creator info with icon */}
+        <div className="flex items-center" aria-label="Created by">
+          <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-1">
+            {creatorName.charAt(0).toUpperCase()}
+          </div>
+          <span className="font-medium">{creatorName}</span>
+        </div>
+        
+        {/* Separator dot */}
+        <span aria-hidden="true">•</span>
+        
+        {/* Posted date */}
+        <div className="flex items-center" aria-label="Posted date">
+          <Clock size={12} className="mr-1" aria-hidden="true" />
+          <time dateTime={new Date(tool.createdAt || tool.timestamp || 0).toISOString()}>
+            {formatDate(tool.createdAt || tool.timestamp || 0)}
+          </time>
+        </div>
       </div>
       
       <p className="text-gray-600 mb-4 text-sm">
@@ -419,9 +433,8 @@ const ToolCard = ({
       </p>
       
       <div className="flex justify-between items-center">
-        <div className="text-xs text-gray-500">
-          by <span className="font-medium">{creatorName}</span>
-        </div>
+        {/* Empty div to maintain layout since we moved creator info up */}
+        <div className="text-xs"></div>
         
         <div className="flex items-center space-x-2" style={{minHeight: '40px'}}>
           {/* Only show upvote button if function is provided and not hidden */}

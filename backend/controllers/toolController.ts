@@ -19,8 +19,9 @@ const toolController = {
         filter.category = req.query.category;
       }
       
-      // Updated to populate comment author information
+      // Updated to populate creator and comment author information
       const tools = await Tool.find(filter)
+        .populate('creator', 'name username email')
         .populate({
           path: 'comments.author',
           select: 'username name email'

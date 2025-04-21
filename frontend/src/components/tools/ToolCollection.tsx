@@ -270,6 +270,33 @@ const ToolCollection = ({
                 
                 <p className="mt-2 text-muted-foreground">{tool.description}</p>
                 
+                {/* Adding creator information with avatar similar to ToolCard */}
+                <div className="flex items-center text-xs text-gray-500 mt-3 mb-2 space-x-2">
+                  {/* Creator info with icon */}
+                  <div className="flex items-center" aria-label="Created by">
+                    <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-1">
+                      {typeof tool.creator === 'object' 
+                        ? (tool.creator?.username || tool.creator?.name || 'U').charAt(0).toUpperCase()
+                        : (tool.creator || 'U').charAt(0).toUpperCase()}
+                    </div>
+                    <span className="font-medium">
+                      {typeof tool.creator === 'object' 
+                        ? tool.creator?.username || tool.creator?.name || 'Unknown User'
+                        : tool.creator || 'Unknown User'}
+                    </span>
+                  </div>
+                  
+                  {/* Separator dot */}
+                  <span aria-hidden="true">•</span>
+                  
+                  {/* Posted date - mobile-friendly version that's always visible */}
+                  <div className="flex items-center" aria-label="Posted date">
+                    <time dateTime={tool.createdAt}>
+                      {formatDate(tool.createdAt)}
+                    </time>
+                  </div>
+                </div>
+                
                 <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-border/50 items-center">
                   <Button 
                     variant={isAuthenticated ? "outline" : "ghost"} 
